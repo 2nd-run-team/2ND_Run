@@ -53,3 +53,23 @@ jobs:
           done < <(git ls-files)
           [ "$FAIL" -eq 0 ] && echo "OK: 대용량 비-LFS 파일 없음"
           exit $FAIL
+
+      - name: 엔진 버전 고정 확인
+        env:
+          EXPECTED_ENGINE: "5.8"   # 업그레이드 시 README/CONTRIBUTING 과 함께 수정
+        run: |
+          UPROJECT=$(git ls-files '*.uproject' | head -1)
+          if [ -z "$UPROJECT" ]; then
+            echo "아직 .uproject 없음 — 검사 건너뜀"
+            exit 0
+          fi
+          ASSOC=$(grep -o '"EngineAssociation"[^,]*' "$UPROJECT" | sed 's/.*:[[:space:]]*"//; s/"//')
+          echo "$UPROJECT → EngineAssociation = $ASSOC"
+          # 소스 빌드 엔진은 GUID({...})를 쓰므로 검사 대상에서 제외
+          case "$ASSOC" in
+            \{*\}) echo "소스 빌드 엔진(GUID) — 버전 검사 건너뜀"; exit 0 ;;
+            "$EXPECTED_ENGINE") echo "OK: 엔진 $EXPECTED_ENGINE 고정 유지"; exit 0 ;;
+            *)
+              echo "::error file=$UPROJECT::엔진 버전이 $EXPECTED_ENGINE 이 아닙니다 (현재 $ASSOC). 팀 전체 합의 없이 엔진 버전을 바꾸면 에셋 호환이 깨집니다."
+              exit 1 ;;
+          esac

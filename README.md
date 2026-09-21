@@ -1,12 +1,30 @@
 # 2ND_Run
 
-Unreal Engine 5.8 프로젝트.
+![Unreal Engine](https://img.shields.io/badge/Unreal%20Engine-5.8.2-0E1128?logo=unrealengine)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+Unreal Engine **5.8.2** 프로젝트.
 
 ## 요구 사항
 
-- Unreal Engine **5.8**
-- Git + **Git LFS** ([설치](https://git-lfs.com))
-- Visual Studio 2022 (C++ 작업 시, "Game development with C++" 워크로드)
+| 항목 | 버전 | 비고 |
+|------|------|------|
+| Unreal Engine | **5.8.2** | 팀 전원 동일 패치 버전 고정 |
+| Git LFS | 3.x 이상 | [설치](https://git-lfs.com) |
+| Visual Studio | 2022 (17.8 이상) | C++ 작업 시 "Game development with C++" 워크로드 |
+
+### 엔진 버전을 고정하는 이유
+
+상위 버전 에디터로 저장한 에셋은 **하위 버전에서 열리지 않습니다.** 한 명이
+5.8.2로 저장한 `.uasset`을 5.8.0 쓰는 팀원이 열면 로드에 실패하고, 되돌릴
+방법이 없습니다. 업그레이드는 반드시 팀 전체가 같은 시점에 합니다.
+
+에픽 런처 → 라이브러리에서 설치된 버전을 확인하세요. 5.8.0/5.8.1이면 5.8.2로
+업데이트하면 됩니다. 버전을 올릴 때는 이 표와 상단 배지를 함께 갱신해
+PR로 공유합니다.
+
+> 5.8은 UE5 계열의 마지막 메이저 릴리스입니다. UE6는 2027년 말 얼리 액세스가
+> 목표라, 이 프로젝트 기간 동안은 5.8.x 안에서 패치 버전만 관리하면 됩니다.
 
 ## 시작하기
 

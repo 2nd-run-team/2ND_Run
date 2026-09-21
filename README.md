@@ -109,13 +109,14 @@ Plugins/      플러그인
 | 조건 | 내용 |
 |------|------|
 | 승인 | **1명 이상** |
-| 승인 자격 | 해당 경로의 CODEOWNER (= 그 팀 멤버) |
+| 승인 자격 | **팀원 누구나** (경로 제한 없음) |
 | 상태 검사 | `hygiene` 통과 |
 | 머지 방식 | Squash merge, 머지 후 브랜치 자동 삭제 |
 
-경로별로 누구 승인이 필요한지는 [CODEOWNERS](.github/CODEOWNERS) 가 정합니다.
-예를 들어 `Source/` 를 건드린 PR 은 `programmers` 팀에게, `Content/Audio/` 는
-`sound` 팀에게 리뷰 요청이 자동으로 갑니다.
+[CODEOWNERS](.github/CODEOWNERS) 는 **리뷰 요청을 누구에게 보낼지**만 정합니다.
+`Source/` 를 건드린 PR 은 `programmers` 팀에게, `Content/Audio/` 는 `sound`
+팀에게 자동으로 요청이 갑니다. 다만 승인 자격은 제한하지 않아서, 담당자가
+자리를 비워도 다른 팀원이 승인하면 머지할 수 있습니다.
 
 주의할 점 두 가지:
 
@@ -142,10 +143,12 @@ PR 템플릿에 체크리스트가 있으니 그대로 따라가면 됩니다.
 | `@2nd-run-team/programmers` | Write | `Source/`, `Config/` | Hoona-Kim, bizet12 |
 | `@2nd-run-team/artists` | Write | `Content/` | choisney, bizet12 |
 | `@2nd-run-team/sound` | Write | `Content/Audio,Sound,SFX,Music/` | Enginemaster |
-| `@2nd-run-team/planners` | Triage | 이슈 · 일정 | |
 
-Write = 브랜치 푸시, PR 생성·리뷰 승인. `main`/`develop` 직접 푸시는 보호 규칙이 차단합니다.
-Triage = 이슈·PR 관리 (코드 푸시 불가).
+**전원 Write 권한으로 동일합니다.** 브랜치 푸시, PR 생성, 리뷰·승인, 이슈 관리,
+LFS 락까지 할 수 있는 일에 차이가 없습니다. `main`/`develop` 직접 푸시만
+보호 규칙이 막습니다.
+
+팀 구분은 **리뷰 요청 자동 배정** 용도입니다. 권한 차이가 아닙니다.
 
 사운드 에셋은 `Content/` 아래 위 네 폴더 중 하나에 넣으면 `sound` 팀에 리뷰가
 갑니다. 다른 이름을 쓰기로 했다면 [CODEOWNERS](.github/CODEOWNERS) 를 수정하세요.

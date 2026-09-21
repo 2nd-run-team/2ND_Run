@@ -1,25 +1,27 @@
-# 경로별 기본 리뷰어. PR이 해당 경로를 건드리면 자동으로 리뷰어가 지정됩니다.
+# 경로별 리뷰어 자동 지정.
 #
-# 주의: 팀에 멤버가 없으면 리뷰 요청이 아무에게도 가지 않아 PR이 머지 불가
-# 상태로 막힙니다. 팀원을 다 채우기 전까지는 @HolicKW 를 함께 둡니다.
+# 이 파일은 "리뷰 요청을 누구에게 보낼지"만 정합니다.
+# 승인 자격은 제한하지 않습니다 — 브랜치 보호에서 require_code_owner_reviews 를
+# 껐기 때문에, 팀원 누구든 1명이 승인하면 머지할 수 있습니다.
+# 담당자가 자리를 비워도 PR 이 멈추지 않게 하기 위한 설정입니다.
 
 # 기본
-*                       @2nd-run-team/programmers @HolicKW
+*                       @2nd-run-team/programmers
 
 # C++ 소스
-/Source/                @2nd-run-team/programmers @HolicKW
+/Source/                @2nd-run-team/programmers
+
+# 프로젝트 전역 설정 — 전원의 에디터에 영향이 갑니다
+/Config/                @2nd-run-team/programmers
 
 # 에셋 · 레벨
-/Content/               @2nd-run-team/artists @HolicKW
+/Content/               @2nd-run-team/artists
 
 # 사운드 (아래 규칙이 위의 /Content/ 규칙을 덮어씁니다 — 마지막 매치가 이김)
-/Content/Audio/         @2nd-run-team/sound @HolicKW
-/Content/Sound/         @2nd-run-team/sound @HolicKW
-/Content/SFX/           @2nd-run-team/sound @HolicKW
-/Content/Music/         @2nd-run-team/sound @HolicKW
-
-# 프로젝트 전역 설정 — 전원의 에디터에 영향이 가므로 신중히
-/Config/                @2nd-run-team/programmers @HolicKW
+/Content/Audio/         @2nd-run-team/sound
+/Content/Sound/         @2nd-run-team/sound
+/Content/SFX/           @2nd-run-team/sound
+/Content/Music/         @2nd-run-team/sound
 
 # 저장소 설정 · CI · 문서
 /.github/               @HolicKW

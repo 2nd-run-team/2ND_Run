@@ -66,14 +66,18 @@ Plugins/      플러그인
 개인 계정이 아니라 조직에 귀속되어 있어, 구성원이 바뀌어도 소유권 이전이
 필요 없습니다.
 
-| 팀 | 저장소 권한 | 담당 | 멤버 |
-|----|------------|------|------|
-| `@2nd-run-team/programmers` | Write | `Source/`, `Config/` | |
-| `@2nd-run-team/artists` | Write | `Content/` | |
+| 팀 | 권한 | 담당 경로 | 멤버 |
+|----|------|----------|------|
+| `@2nd-run-team/programmers` | Write | `Source/`, `Config/` | Hoona-Kim, bizet12 |
+| `@2nd-run-team/artists` | Write | `Content/` | choisney, bizet12 |
+| `@2nd-run-team/sound` | Write | `Content/Audio,Sound,SFX,Music/` | Enginemaster |
 | `@2nd-run-team/planners` | Triage | 이슈 · 일정 | |
 
-Write = 브랜치 푸시, PR 생성·리뷰. `main`/`develop` 직접 푸시는 보호 규칙이 차단합니다.
+Write = 브랜치 푸시, PR 생성·리뷰 승인. `main`/`develop` 직접 푸시는 보호 규칙이 차단합니다.
 Triage = 이슈·PR 관리 (코드 푸시 불가).
+
+사운드 에셋은 `Content/` 아래 위 네 폴더 중 하나에 넣으면 `sound` 팀에 리뷰가
+갑니다. 다른 이름을 쓰기로 했다면 [CODEOWNERS](.github/CODEOWNERS) 를 수정하세요.
 
 ## 라이선스
 

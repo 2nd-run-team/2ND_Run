@@ -12,6 +12,12 @@
 # 에셋 · 레벨
 /Content/               @2nd-run-team/artists @HolicKW
 
+# 사운드 (아래 규칙이 위의 /Content/ 규칙을 덮어씁니다 — 마지막 매치가 이김)
+/Content/Audio/         @2nd-run-team/sound @HolicKW
+/Content/Sound/         @2nd-run-team/sound @HolicKW
+/Content/SFX/           @2nd-run-team/sound @HolicKW
+/Content/Music/         @2nd-run-team/sound @HolicKW
+
 # 프로젝트 전역 설정 — 전원의 에디터에 영향이 가므로 신중히
 /Config/                @2nd-run-team/programmers @HolicKW
 

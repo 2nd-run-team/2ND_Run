@@ -28,15 +28,54 @@ PR로 공유합니다.
 
 ## 시작하기
 
+### 1단계 — 조직 초대 수락
+
+https://github.com/orgs/2nd-run-team/invitations 에서 초대를 수락합니다.
+**초대는 7일 뒤 만료**되고, 수락 전에는 푸시 권한이 없습니다.
+
+"클론은 되는데 푸시가 안 된다"면 대부분 이걸 안 한 경우입니다.
+
+### 2단계 — Git LFS 설치 (clone 전에)
+
 ```bash
-git lfs install                                          # 반드시 clone 전에
+git lfs install
+```
+
+이걸 **먼저** 하지 않고 clone 하면 `.uasset` 이 100바이트짜리 포인터 텍스트로
+내려와 프로젝트 전체가 깨져 보입니다. 에디터가 에셋을 못 읽고 원인을 찾느라
+몇 시간을 날리는, 가장 흔한 초기 사고입니다.
+
+이미 잘못 받았다면 `git lfs install` 후 `git lfs pull` 로 복구됩니다.
+
+### 3단계 — clone 및 계정 설정
+
+```bash
 git clone https://github.com/2nd-run-team/2ND_Run.git
 cd 2ND_Run
+
+git config user.name  "본인 이름"
+git config user.email "GitHub에 등록된 이메일"   # 중요 — 아래 설명 참고
 git config lfs.locksverify true
 ```
 
-> `git lfs install` 을 먼저 하지 않으면 `.uasset` 이 100바이트짜리 포인터
-> 텍스트로 내려와 프로젝트 전체가 깨져 보입니다. 가장 흔한 초기 사고입니다.
+**`user.email` 은 GitHub 계정에 등록된 주소여야 합니다.** 다른 주소로 커밋하면
+푸시는 되지만 커밋이 계정과 연결되지 않아 **Contributors 집계에서 빠집니다.**
+회색 이름으로만 표시되고, 기여도가 잡히지 않습니다.
+
+이메일을 공개하기 싫으면 GitHub이 제공하는 noreply 주소를 쓰면 됩니다.
+Settings → Emails 에서 확인할 수 있는 `12345678+아이디@users.noreply.github.com`
+형식이며, 이것도 정상 집계됩니다.
+
+확인:
+
+```bash
+git config user.email          # 설정값 확인
+git log -1 --format='%ae'      # 실제 커밋에 박힌 주소
+```
+
+나중에 이메일을 등록하면 과거 커밋도 소급 반영됩니다.
+
+### 4단계 — 프로젝트 실행
 
 `.uproject` 우클릭 → *Generate Visual Studio project files* (C++ 프로젝트인 경우)
 → `.sln` 빌드 → 에디터 실행.
@@ -59,6 +98,38 @@ Plugins/      플러그인
 불가능해서 동시 수정 시 한쪽 작업이 사라집니다.
 
 자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md) 참고.
+
+## PR 과 코드 리뷰
+
+`main`·`develop` 은 보호되어 있어 직접 푸시가 불가능합니다. 모든 변경은
+브랜치 → PR → 리뷰 승인 → Squash merge 경로를 지납니다.
+
+**팀원 누구나 리뷰하고 승인할 수 있습니다.** 팀장 승인을 기다릴 필요 없습니다.
+
+| 조건 | 내용 |
+|------|------|
+| 승인 | **1명 이상** |
+| 승인 자격 | 해당 경로의 CODEOWNER (= 그 팀 멤버) |
+| 상태 검사 | `hygiene` 통과 |
+| 머지 방식 | Squash merge, 머지 후 브랜치 자동 삭제 |
+
+경로별로 누구 승인이 필요한지는 [CODEOWNERS](.github/CODEOWNERS) 가 정합니다.
+예를 들어 `Source/` 를 건드린 PR 은 `programmers` 팀에게, `Content/Audio/` 는
+`sound` 팀에게 리뷰 요청이 자동으로 갑니다.
+
+주의할 점 두 가지:
+
+- **자기 PR 은 자기가 승인할 수 없습니다.** 반드시 다른 사람이 봐야 합니다.
+- 리뷰 후 새 커밋을 올리면 기존 승인이 무효화됩니다 (`dismiss_stale_reviews`).
+  리뷰어에게 다시 요청하세요.
+
+리뷰할 때 봐야 할 것:
+
+- C++ — 컴파일되는가, 네이밍·구조가 기존 코드와 맞는가
+- 에셋 — 에디터에서 실제로 열어봤는가, LFS 락이 풀렸는가
+- 공통 — `Saved/`·`Intermediate/` 같은 생성 폴더가 섞여 들어오지 않았는가
+
+PR 템플릿에 체크리스트가 있으니 그대로 따라가면 됩니다.
 
 ## 팀
 

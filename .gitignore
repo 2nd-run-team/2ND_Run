@@ -1,0 +1,71 @@
+# ==========================================
+# Unreal Engine 5 — .gitignore
+# ==========================================
+
+# --- Engine 생성 폴더 (절대 커밋 금지) ---
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+Platforms/*/Binaries/
+Platforms/*/Build/
+Platforms/*/Intermediate/
+
+# --- 플러그인 하위의 생성 폴더 ---
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
+Plugins/**/Build/
+
+# --- IDE / 빌드 도구 ---
+.vs/
+.vscode/
+.idea/
+.xcodeproj/
+.xcworkspace/
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.sdf
+*.sbr
+*.ncb
+*.user
+*.userprefs
+*.aps
+Makefile
+CMakeLists.txt
+compile_commands.json
+
+# --- Rider ---
+.idea/
+*.DotSettings.user
+
+# --- 컴파일 산출물 ---
+# 주의: *.obj / *.dll / *.lib 를 전역으로 막지 않습니다.
+#  - C++ 컴파일 산출물은 이미 Intermediate/, Binaries/ 안에 있어 위에서 제외됨
+#  - *.obj 는 3D 모델 포맷이기도 하고, 서드파티 플러그인은 .dll/.lib 를 커밋해야 함
+*.ipa
+*.app
+
+# --- 패키징 결과물 ---
+Packaged/
+Builds/
+Archive/
+
+# --- OS 잡파일 ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- 로컬 전용 설정 (팀원마다 다름) ---
+# 에디터 개인 레이아웃/최근 파일 등은 Saved/ 에 있어 이미 제외됨.
+# 필요 시 개인 override 파일을 여기 추가:
+# Config/DefaultEditorPerProjectUserSettings.ini
+
+# --- 크래시 리포트 ---
+*.dmp
+CrashReportClient/

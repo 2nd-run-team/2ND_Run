@@ -1,0 +1,55 @@
+name: Repo Hygiene
+
+# 언리얼 빌드는 GitHub 호스티드 러너에서 불가능합니다 (엔진 설치 필요, 디스크/시간 초과).
+# 실제 빌드 CI가 필요하면 엔진이 설치된 self-hosted 러너를 붙여야 합니다.
+# 이 워크플로는 호스티드 러너에서 돌 수 있는 저장소 위생 검사만 수행합니다.
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false   # 포인터 상태로 받아야 LFS 추적 여부를 검사할 수 있음
+
+      - name: 생성 폴더가 커밋되지 않았는지 확인
+        run: |
+          BAD=$(git ls-files | grep -E '(^|/)(Binaries|Intermediate|Saved|DerivedDataCache)/' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::저장소에 포함되면 안 되는 생성 폴더가 커밋되어 있습니다:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "OK: 생성 폴더 없음"
+
+      - name: 바이너리 에셋이 LFS로 추적되는지 확인
+        run: |
+          FAIL=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            if ! head -c 100 "$f" | grep -q 'git-lfs.github.com/spec'; then
+              echo "::error file=$f::LFS로 추적되지 않은 바이너리 에셋입니다"
+              FAIL=1
+            fi
+          done < <(git ls-files -- '*.uasset' '*.umap' '*.fbx' '*.png' '*.wav')
+          [ "$FAIL" -eq 0 ] && echo "OK: 모든 에셋이 LFS 추적됨"
+          exit $FAIL
+
+      - name: 대용량 비-LFS 파일 검사
+        run: |
+          FAIL=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            SIZE=$(stat -c%s "$f")
+            if [ "$SIZE" -gt 10485760 ]; then
+              echo "::error file=$f::10MB 초과 파일이 LFS 없이 커밋되었습니다 ($SIZE bytes)"
+              FAIL=1
+            fi
+          done < <(git ls-files)
+          [ "$FAIL" -eq 0 ] && echo "OK: 대용량 비-LFS 파일 없음"
+          exit $FAIL

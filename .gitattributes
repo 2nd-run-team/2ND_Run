@@ -1,0 +1,77 @@
+# ==========================================
+# Unreal Engine 5 — .gitattributes (Git LFS + File Locking)
+# ==========================================
+# lockable 플래그: 병합이 불가능한 바이너리 파일은 기본 read-only 로 두고,
+# 작업 전 `git lfs lock <path>` 로 잠근 사람만 편집할 수 있게 한다.
+# 팀 작업에서 에셋 충돌을 막는 핵심 설정.
+
+* text=auto
+
+# --- Unreal 에셋 (반드시 LFS + Lock) ---
+*.uasset  filter=lfs diff=lfs merge=lfs -text lockable
+*.umap    filter=lfs diff=lfs merge=lfs -text lockable
+
+# --- 이미지 ---
+*.png     filter=lfs diff=lfs merge=lfs -text lockable
+*.jpg     filter=lfs diff=lfs merge=lfs -text lockable
+*.jpeg    filter=lfs diff=lfs merge=lfs -text lockable
+*.tga     filter=lfs diff=lfs merge=lfs -text lockable
+*.bmp     filter=lfs diff=lfs merge=lfs -text lockable
+*.tiff    filter=lfs diff=lfs merge=lfs -text lockable
+*.tif     filter=lfs diff=lfs merge=lfs -text lockable
+*.psd     filter=lfs diff=lfs merge=lfs -text lockable
+*.exr     filter=lfs diff=lfs merge=lfs -text lockable
+*.hdr     filter=lfs diff=lfs merge=lfs -text lockable
+
+# --- 오디오 ---
+*.wav     filter=lfs diff=lfs merge=lfs -text lockable
+*.mp3     filter=lfs diff=lfs merge=lfs -text lockable
+*.ogg     filter=lfs diff=lfs merge=lfs -text lockable
+*.flac    filter=lfs diff=lfs merge=lfs -text lockable
+
+# --- 3D / 애니메이션 원본 ---
+*.fbx     filter=lfs diff=lfs merge=lfs -text lockable
+*.obj     filter=lfs diff=lfs merge=lfs -text lockable
+*.3ds     filter=lfs diff=lfs merge=lfs -text lockable
+*.blend   filter=lfs diff=lfs merge=lfs -text lockable
+*.dae     filter=lfs diff=lfs merge=lfs -text lockable
+*.abc     filter=lfs diff=lfs merge=lfs -text lockable
+*.glb     filter=lfs diff=lfs merge=lfs -text lockable
+*.gltf    filter=lfs diff=lfs merge=lfs -text lockable
+
+# --- 영상 ---
+*.mp4     filter=lfs diff=lfs merge=lfs -text lockable
+*.mov     filter=lfs diff=lfs merge=lfs -text lockable
+*.avi     filter=lfs diff=lfs merge=lfs -text lockable
+*.webm    filter=lfs diff=lfs merge=lfs -text lockable
+
+# --- 폰트 ---
+*.ttf     filter=lfs diff=lfs merge=lfs -text lockable
+*.otf     filter=lfs diff=lfs merge=lfs -text lockable
+
+# --- 기타 바이너리 ---
+*.zip     filter=lfs diff=lfs merge=lfs -text
+*.7z      filter=lfs diff=lfs merge=lfs -text
+*.rar     filter=lfs diff=lfs merge=lfs -text
+*.pdf     filter=lfs diff=lfs merge=lfs -text
+*.icu     filter=lfs diff=lfs merge=lfs -text
+*.dat     filter=lfs diff=lfs merge=lfs -text
+*.bin     filter=lfs diff=lfs merge=lfs -text
+*.pak     filter=lfs diff=lfs merge=lfs -text
+*.udk     filter=lfs diff=lfs merge=lfs -text
+*.upk     filter=lfs diff=lfs merge=lfs -text
+
+# --- 텍스트로 다뤄야 하는 것들 (diff 가능하게) ---
+*.uproject   text eol=crlf
+*.uplugin    text eol=crlf
+*.ini        text eol=crlf
+*.h          text
+*.hpp        text
+*.cpp        text
+*.cs         text
+*.md         text
+*.json       text
+*.yml        text eol=lf
+*.yaml       text eol=lf
+*.sh         text eol=lf
+*.bat        text eol=crlf

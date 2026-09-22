@@ -111,3 +111,52 @@ git add Content/...
 ```
 
 그 전에 반드시 상대방과 이야기하세요. 한쪽 작업이 사라집니다.
+
+## 7. Discord 연동
+
+### 7.1 PR · 푸시 알림 (코드 불필요)
+
+Discord 가 GitHub 웹훅 포맷을 그대로 이해합니다. 설정만 하면 됩니다.
+
+1. Discord 채널 → 톱니바퀴 → 연동 → **웹후크** → 새 웹후크 → URL 복사
+2. 복사한 URL 끝에 **`/github` 를 붙입니다**
+
+   ```
+   https://discord.com/api/webhooks/1234.../abcd        ← 복사한 것
+   https://discord.com/api/webhooks/1234.../abcd/github  ← 등록할 것
+   ```
+
+3. 저장소 → Settings → Webhooks → **Add webhook**
+   - Payload URL: 위의 `/github` 붙인 주소
+   - Content type: `application/json`
+   - Events: **Let me select individual events** → `Pull requests`, `Pushes`, `Issues` 정도만 체크
+4. Add webhook
+
+`/github` 를 빼면 Discord 가 내용을 해석하지 못해 아무것도 뜨지 않습니다.
+
+### 7.2 잠긴 에셋 목록 자동 게시
+
+[`.github/workflows/lfs-locks-report.yml`](.github/workflows/lfs-locks-report.yml)
+이 매일 저녁 7시(KST)에 잠긴 파일 목록을 Discord 에 올립니다.
+
+누가 락을 잡은 채로 퇴근했을 때 다음 사람이 확인하는 용도입니다. 작업 직전
+확인은 에디터의 자물쇠 아이콘이 더 빠릅니다.
+
+설정:
+
+1. 7.1 에서 만든 웹후크 URL (이번에는 **`/github` 없이**) 또는 별도 채널의 웹후크
+2. 저장소 → Settings → Secrets and variables → Actions → **New repository secret**
+   - Name: `DISCORD_WEBHOOK`
+   - Secret: 웹후크 URL
+3. Actions 탭 → LFS Lock Report → **Run workflow** 로 테스트
+
+동작:
+
+| 상황 | 결과 |
+|------|------|
+| 예정 실행 · 락 있음 | 목록 게시 |
+| 예정 실행 · 락 없음 | 게시 안 함 (채널 소음 방지) |
+| 수동 실행 | 락이 없어도 응답 |
+
+시간을 바꾸려면 워크플로의 `cron: '0 10 * * *'` 를 수정하세요. UTC 기준이라
+KST 에서 9를 빼면 됩니다 (19시 → 10).

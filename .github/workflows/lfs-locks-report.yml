@@ -1,0 +1,69 @@
+name: LFS Lock Report
+
+# 잠긴 에셋 목록을 Discord 에 게시합니다.
+#
+# 목적: 누가 파일을 잠근 채로 퇴근했을 때 다음 사람이 확인할 수 있게 하는 것.
+# 작업 직전 확인은 언리얼 에디터의 자물쇠 아이콘이 더 빠릅니다.
+#
+# 필요한 설정: 저장소 Secrets 에 DISCORD_WEBHOOK 등록
+#   Settings > Secrets and variables > Actions > New repository secret
+#
+# GitHub REST API 에는 LFS 락 엔드포인트가 없어서 Git LFS 전용 API 를 씁니다.
+
+on:
+  schedule:
+    - cron: '0 10 * * *'   # 매일 19:00 KST (UTC+9)
+  workflow_dispatch:       # Actions 탭에서 수동 실행
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 락 조회 후 Discord 게시
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "::error::DISCORD_WEBHOOK secret 이 없습니다. README 의 설정 안내를 참고하세요."
+            exit 1
+          fi
+
+          API="https://github.com/${GITHUB_REPOSITORY}.git/info/lfs/locks"
+          RESP=$(curl -sS -H "Authorization: Bearer ${TOKEN}" \
+                       -H "Accept: application/vnd.git-lfs+json" \
+                       "$API")
+
+          if ! echo "$RESP" | jq -e '.locks' >/dev/null 2>&1; then
+            echo "::error::락 조회 실패: $RESP"
+            exit 1
+          fi
+
+          COUNT=$(echo "$RESP" | jq '.locks | length')
+          echo "잠긴 파일 $COUNT 개"
+
+          # 예정 실행에서 락이 없으면 알림을 보내지 않습니다 (채널 소음 방지).
+          # 수동 실행은 결과가 없어도 응답합니다.
+          if [ "$COUNT" -eq 0 ] && [ "$MANUAL" != "true" ]; then
+            echo "락 없음 — 게시 생략"
+            exit 0
+          fi
+
+          if [ "$COUNT" -eq 0 ]; then
+            MSG="🔓 **잠긴 에셋 없음** — 모든 파일이 편집 가능합니다."
+          else
+            LIST=$(echo "$RESP" | jq -r '
+              .locks
+              | sort_by(.locked_at)
+              | map("• `\(.path)`\n    ↳ **\(.owner.name)** · \(.locked_at[0:10])")
+              | join("\n")
+            ')
+            MSG=$(printf '🔒 **잠긴 에셋 %s개**\n\n%s\n\n해제: `git lfs unlock <경로>` · 목록: `git lfs locks`' "$COUNT" "$LIST")
+          fi
+
+          jq -n --arg c "$MSG" '{content: $c, allowed_mentions: {parse: []}}' \
+            | curl -sS -X POST -H "Content-Type: application/json" -d @- "$WEBHOOK" \
+            && echo "Discord 게시 완료"

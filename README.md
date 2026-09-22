@@ -94,11 +94,23 @@ Config/       프로젝트 설정 — 변경 시 팀 공유
 
 ```bash
 git checkout develop && git pull
-git checkout -b feature/이름-작업
+git checkout -b feature/player-dash
 # 작업 후
-git push -u origin feature/이름-작업
+git push -u origin feature/player-dash
 gh pr create --base develop --fill
 ```
+
+브랜치 이름은 **`<타입>/<작업>`** — 작성자 이름은 넣지 않습니다.
+
+| 타입 | 담당 | 용도 | 예 |
+|------|------|------|-----|
+| `feature/` | 프로그래머 | 코드 · 기능 · 버그 수정 · 설정 · 문서 | `feature/player-dash` |
+| `art/` | 아티스트 | 에셋 · 머티리얼 · 텍스처 · 레벨 | `art/character-material` |
+| `sound/` | 사운드 | BGM · 효과음 · 사운드 큐 | `sound/footstep-sfx` |
+
+영소문자와 하이픈만, 2~4단어로. 자세한 설명은 PR 본문에 씁니다.
+브랜치 이름으로는 기능/수정이 구분되지 않지만, 커밋 메시지 타입
+(`feat` `fix` `art` …)으로 구분됩니다.
 
 | 항목 | 설정 |
 |------|------|

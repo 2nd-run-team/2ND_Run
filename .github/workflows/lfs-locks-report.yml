@@ -1,69 +1,147 @@
 name: LFS Lock Report
 
-# 잠긴 에셋 목록을 Discord 에 게시합니다.
+# 잠긴 에셋 상태를 Discord 에 알립니다. 두 가지 모드로 동작합니다.
 #
-# 목적: 누가 파일을 잠근 채로 퇴근했을 때 다음 사람이 확인할 수 있게 하는 것.
-# 작업 직전 확인은 언리얼 에디터의 자물쇠 아이콘이 더 빠릅니다.
+#   변화 알림 (15분마다) — 직전 조회 이후 새로 잠기거나 풀린 것만 게시.
+#                          변화가 없으면 아무것도 보내지 않습니다.
+#   전체 목록 (매일 19시) — 현재 잠긴 파일 전부를 게시.
+#   수동 실행            — 전체 목록을 즉시 게시. Actions 탭에서 실행.
 #
-# 필요한 설정: 저장소 Secrets 에 DISCORD_WEBHOOK 등록
-#   Settings > Secrets and variables > Actions > New repository secret
+# GitHub 은 LFS 락 이벤트를 웹훅으로 보내주지 않아 주기 조회로 대신합니다.
+# 따라서 최대 15분 지연되고, 예약 실행은 부하에 따라 더 밀릴 수 있습니다.
 #
-# GitHub REST API 에는 LFS 락 엔드포인트가 없어서 Git LFS 전용 API 를 씁니다.
+# 필요한 설정: Settings > Secrets and variables > Actions 에 DISCORD_WEBHOOK
 
 on:
   schedule:
-    - cron: '0 10 * * *'   # 매일 19:00 KST (UTC+9)
-  workflow_dispatch:       # Actions 탭에서 수동 실행
+    - cron: '*/15 * * * *'   # 변화 알림
+    - cron: '0 10 * * *'     # 전체 목록 — 19:00 KST (UTC+9)
+  workflow_dispatch:
+
+# 실행이 겹치면 상태 비교가 꼬이므로 직렬화합니다.
+concurrency:
+  group: lfs-locks
+  cancel-in-progress: false
 
 jobs:
   report:
     runs-on: ubuntu-latest
     steps:
-      - name: 락 조회 후 Discord 게시
-        env:
-          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: 모드 결정
+        id: mode
         run: |
-          set -euo pipefail
-
-          if [ -z "${WEBHOOK:-}" ]; then
-            echo "::error::DISCORD_WEBHOOK secret 이 없습니다. README 의 설정 안내를 참고하세요."
-            exit 1
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+          || [ "${{ github.event.schedule }}" = "0 10 * * *" ]; then
+            echo "kind=full" >> "$GITHUB_OUTPUT"
+          else
+            echo "kind=diff" >> "$GITHUB_OUTPUT"
           fi
 
-          API="https://github.com/${GITHUB_REPOSITORY}.git/info/lfs/locks"
-          RESP=$(curl -sS -H "Authorization: Bearer ${TOKEN}" \
-                       -H "Accept: application/vnd.git-lfs+json" \
-                       "$API")
+      # 캐시는 키가 같으면 덮어쓸 수 없으므로, 매 실행마다 새 키로 저장하고
+      # restore-keys 접두사로 직전 것을 불러오는 방식을 씁니다.
+      - name: 직전 상태 불러오기
+        if: steps.mode.outputs.kind == 'diff'
+        uses: actions/cache/restore@v4
+        with:
+          path: prev.json
+          key: lfs-locks-${{ github.run_id }}
+          restore-keys: lfs-locks-
+
+      - name: 락 조회
+        id: fetch
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          RESP=$(curl -sS --fail-with-body \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Accept: application/vnd.git-lfs+json" \
+            "https://github.com/${GITHUB_REPOSITORY}.git/info/lfs/locks")
 
           if ! echo "$RESP" | jq -e '.locks' >/dev/null 2>&1; then
             echo "::error::락 조회 실패: $RESP"
             exit 1
           fi
 
-          COUNT=$(echo "$RESP" | jq '.locks | length')
-          echo "잠긴 파일 $COUNT 개"
+          echo "$RESP" | jq '.locks | sort_by(.id)' > curr.json
+          echo "count=$(jq length curr.json)" >> "$GITHUB_OUTPUT"
+          echo "현재 잠긴 파일 $(jq length curr.json)개"
 
-          # 예정 실행에서 락이 없으면 알림을 보내지 않습니다 (채널 소음 방지).
-          # 수동 실행은 결과가 없어도 응답합니다.
-          if [ "$COUNT" -eq 0 ] && [ "$MANUAL" != "true" ]; then
-            echo "락 없음 — 게시 생략"
-            exit 0
-          fi
+      - name: 메시지 작성
+        id: msg
+        env:
+          KIND: ${{ steps.mode.outputs.kind }}
+          COUNT: ${{ steps.fetch.outputs.count }}
+        run: |
+          set -euo pipefail
+          [ -f prev.json ] || echo '[]' > prev.json
 
-          if [ "$COUNT" -eq 0 ]; then
-            MSG="🔓 **잠긴 에셋 없음** — 모든 파일이 편집 가능합니다."
+          fmt() {   # 변화 한 줄: $1=파일, $2=머리말 이모지
+            jq -r --arg e "$2" '.[] | "\($e) `\(.path)` — **\(.owner.name)**"' "$1"
+          }
+
+          full_list() {   # 현재 잠긴 파일 전체 목록
+            jq -r '.[] | "• `\(.path)`\n    ↳ **\(.owner.name)** · \(.locked_at[0:10])"' curr.json
+          }
+
+          if [ "$KIND" = "full" ]; then
+            if [ "$COUNT" -eq 0 ]; then
+              BODY="🔓 **잠긴 에셋 없음** — 모든 파일이 편집 가능합니다."
+            else
+              BODY=$(printf '🔒 **잠긴 에셋 %s개**\n\n%s\n\n해제: `git lfs unlock <경로>`' "$COUNT" "$(full_list)")
+            fi
           else
-            LIST=$(echo "$RESP" | jq -r '
-              .locks
-              | sort_by(.locked_at)
-              | map("• `\(.path)`\n    ↳ **\(.owner.name)** · \(.locked_at[0:10])")
-              | join("\n")
-            ')
-            MSG=$(printf '🔒 **잠긴 에셋 %s개**\n\n%s\n\n해제: `git lfs unlock <경로>` · 목록: `git lfs locks`' "$COUNT" "$LIST")
+            # 락 id 기준으로 새로 생긴 것과 사라진 것을 추립니다.
+            NEW=$(jq -s '[.[0][] | select(.id as $i | ([.[1][].id]) | index($i) | not)]' curr.json prev.json)
+            GONE=$(jq -s '[.[1][] | select(.id as $i | ([.[0][].id]) | index($i) | not)]' curr.json prev.json)
+            echo "$NEW"  > new.json
+            echo "$GONE" > gone.json
+
+            N=$(jq length new.json); G=$(jq length gone.json)
+            echo "신규 $N건, 해제 $G건"
+            if [ "$N" -eq 0 ] && [ "$G" -eq 0 ]; then
+              echo "send=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            : > parts.txt
+            if [ "$N" -gt 0 ]; then fmt new.json  "🔒" >> parts.txt; fi
+            if [ "$G" -gt 0 ]; then fmt gone.json "🔓" >> parts.txt; fi
+            # 변화만 보면 전체 상황을 알 수 없으므로 현재 목록을 함께 붙입니다.
+            if [ "$COUNT" -eq 0 ]; then
+              TAIL="🔓 현재 잠긴 파일 없음 — 모든 파일이 편집 가능합니다."
+            else
+              TAIL=$(printf '📋 **현재 잠긴 파일 %s개**\n%s' "$COUNT" "$(full_list)")
+            fi
+            BODY=$(printf '%s\n\n%s' "$(cat parts.txt)" "$TAIL")
           fi
 
-          jq -n --arg c "$MSG" '{content: $c, allowed_mentions: {parse: []}}' \
-            | curl -sS -X POST -H "Content-Type: application/json" -d @- "$WEBHOOK" \
-            && echo "Discord 게시 완료"
+          echo "send=true" >> "$GITHUB_OUTPUT"
+          { echo 'body<<__EOF__'; echo "$BODY"; echo '__EOF__'; } >> "$GITHUB_OUTPUT"
+
+      - name: Discord 게시
+        if: steps.msg.outputs.send == 'true'
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          BODY: ${{ steps.msg.outputs.body }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "::error::DISCORD_WEBHOOK secret 이 없습니다."
+            exit 1
+          fi
+          jq -n --arg c "$BODY" '{content: $c, allowed_mentions: {parse: []}}' \
+            | curl -sS --fail-with-body -X POST \
+                -H "Content-Type: application/json" -d @- "$WEBHOOK"
+          echo "게시 완료"
+
+      - name: 현재 상태 저장
+        if: steps.mode.outputs.kind == 'diff'
+        run: cp curr.json prev.json
+
+      - name: 캐시 저장
+        if: steps.mode.outputs.kind == 'diff'
+        uses: actions/cache/save@v4
+        with:
+          path: prev.json
+          key: lfs-locks-${{ github.run_id }}

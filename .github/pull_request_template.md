@@ -13,9 +13,11 @@
 ## 체크리스트
 
 - [ ] 에디터에서 정상 실행 확인
-- [ ] C++ 변경 시 컴파일 통과
+- [ ] C++ 변경 시 `Development Editor` 빌드 통과
+- [ ] `Source/` 를 건드렸다면 **팀 채널에 리빌드 공지함** (머지 후 전원 리빌드 필요)
+- [ ] `.Build.cs` 에 모듈 의존성을 추가했다면 아래에 명시함
 - [ ] 수정한 에셋의 LFS 락을 모두 해제함 (`git lfs locks` 로 확인)
-- [ ] `Saved/`, `Intermediate/`, `Binaries/` 등 생성 폴더가 포함되지 않음
+- [ ] `Saved/`, `Intermediate/`, `Binaries/`, `*.sln` 등 생성물이 포함되지 않음
 - [ ] `Config/*.ini` 변경이 있다면 팀에 공유함
 
 ## 스크린샷 / 영상

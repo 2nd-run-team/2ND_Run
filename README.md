@@ -1,8 +1,9 @@
 # 2ND_Run
 
 ![Unreal Engine](https://img.shields.io/badge/Unreal%20Engine-5.8.2-0E1128?logo=unrealengine)
+![Language](https://img.shields.io/badge/C%2B%2B-project-00599C?logo=cplusplus)
 
-Unreal Engine **5.8.2** 블루프린트 프로젝트. 실행 파일은 `SecondRun.uproject`
+Unreal Engine **5.8.2** C++ 프로젝트. 실행 파일은 `SecondRun.uproject`
 입니다. (UE 프로젝트명은 숫자로 시작할 수 없어 저장소명과 다릅니다.)
 
 ## 요구 사항
@@ -10,11 +11,17 @@ Unreal Engine **5.8.2** 블루프린트 프로젝트. 실행 파일은 `SecondRu
 | 항목 | 버전 |
 |------|------|
 | Unreal Engine | **5.8.2 고정** |
+| Visual Studio | **2022** · `C++를 사용한 게임 개발` 워크로드 필수 |
 | Git LFS | 3.x 이상 · [설치](https://git-lfs.com) |
 
 > **엔진 버전은 전원이 5.8.2로 맞춥니다.** 상위 버전으로 저장한 에셋은 하위
 > 버전에서 열리지 않고 되돌릴 방법이 없습니다. 업그레이드는 팀 전체가 동시에
 > 합니다 — 절차는 [CONTRIBUTING.md](CONTRIBUTING.md) 참고.
+
+> **Visual Studio 는 선택이 아닙니다.** C++ 프로젝트라 컴파일 없이는 에디터가
+> 열리지 않습니다. 설치 시 워크로드 목록에서 `C++를 사용한 게임 개발` 을
+> 반드시 체크하세요. 이미 VS 가 있다면 Visual Studio Installer → 수정 →
+> 해당 워크로드 추가.
 
 ## 시작하기
 
@@ -44,12 +51,28 @@ git config lfs.locksverify true
 `user.email` 이 GitHub 등록 주소가 아니면 커밋이 계정에 연결되지 않아
 Contributors 집계에서 빠집니다.
 
-**4. 실행** — `SecondRun.uproject` 더블클릭
+**4. 빌드** ← 블루프린트 프로젝트와 다른 점
 
-블루프린트 프로젝트라 빌드 과정이 없습니다. 단, 첫 실행은 셰이더 컴파일로
-10~30분 걸립니다. 중간에 끄면 다음에 처음부터 다시 합니다.
+C++ 프로젝트라 clone 직후에는 컴파일이 필요합니다. `.uproject` 를 바로
+더블클릭하면 "모듈을 빌드해야 합니다" 프롬프트가 뜨고, 여기서 실패하면
+에디터가 아예 열리지 않습니다.
 
-**5. 에디터에서 소스 컨트롤 연결** (에셋 락 기능)
+```
+1. SecondRun.uproject 우클릭 → Generate Visual Studio project files
+2. 생성된 SecondRun.sln 을 Visual Studio 2022 로 열기
+3. 솔루션 구성을 Development Editor / Win64 로 맞추고 빌드 (Ctrl+Shift+B)
+```
+
+빌드가 끝나면 이후로는 `.uproject` 더블클릭으로 바로 열립니다.
+단, **`Source/` 가 바뀐 브랜치를 pull 받으면 다시 빌드해야 합니다.**
+
+`Generate Visual Studio project files` 항목이 우클릭 메뉴에 없으면 엔진
+연결이 끊긴 것입니다. 에픽 런처에서 UE 5.8.2 를 한 번 실행해 보세요.
+
+**5. 첫 실행** — 셰이더 컴파일로 10~30분 걸립니다. 중간에 끄면 다음에
+처음부터 다시 합니다.
+
+**6. 에디터에서 소스 컨트롤 연결** (에셋 락 기능)
 
 Plugins → `Git LFS 2 Source Control` 활성화 → 재시작 → 우하단 Source Control
 → Provider `Git (beta version)` → **Use Git LFS file locking workflow** 체크
@@ -57,12 +80,13 @@ Plugins → `Git LFS 2 Source Control` 활성화 → 재시작 → 우하단 Sou
 ## 폴더 구조
 
 ```
+Source/       C++ 소스 — 머지 가능, 락 불필요
 Content/      에셋 — LFS 관리, 수정 전 락 필요
 Config/       프로젝트 설정 — 변경 시 팀 공유
 ```
 
-`Intermediate/`, `Saved/`, `DerivedDataCache/` 는 로컬에서 생성되는 캐시라
-저장소에 올리지 않습니다.
+`Intermediate/`, `Saved/`, `Binaries/`, `DerivedDataCache/`, `*.sln` 은
+로컬에서 생성되는 빌드 산출물이라 저장소에 올리지 않습니다.
 
 ## 작업 규칙
 
@@ -93,6 +117,10 @@ git lfs unlock Content/경로/파일.umap   # 푸시 후 해제
 
 에디터에서는 에셋 우클릭 → Check Out 으로 대체됩니다.
 
+**`Source/` 의 `.cpp` / `.h` 는 락이 필요 없습니다.** 일반 텍스트라 git 이
+머지할 수 있습니다. 대신 `Source/` 를 건드린 PR 은 머지 후 전원이 리빌드해야
+하므로 팀 채널에 알려주세요.
+
 자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md) 를 보세요.
 
 ## 문제 해결
@@ -104,3 +132,7 @@ git lfs unlock Content/경로/파일.umap   # 푸시 후 해제
 | 파일이 읽기 전용이라 저장 불가 | 정상 동작. 락을 잡아야 합니다 |
 | `unable to unlink ... Invalid argument` | 위와 같은 원인 |
 | 프로젝트가 안 열림 | 엔진 버전 불일치 → 5.8.2 확인 |
+| "모듈을 빌드해야 합니다" 후 실패 | VS 2022 + C++ 게임 개발 워크로드 미설치 |
+| pull 후 에디터가 안 열림 / 크래시 | `Source/` 변경됨 → VS 에서 다시 빌드 |
+| 빌드는 되는데 새 C++ 클래스가 안 보임 | `Generate Visual Studio project files` 재실행 |
+| 빌드가 계속 깨짐 | `Intermediate/`, `Binaries/` 삭제 후 4번 재수행 |

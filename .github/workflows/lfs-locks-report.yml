@@ -76,16 +76,19 @@ jobs:
           set -euo pipefail
           [ -f prev.json ] || echo '[]' > prev.json
 
-          fmt() {   # $1=파일, $2=머리말 이모지
+          fmt() {   # 변화 한 줄: $1=파일, $2=머리말 이모지
             jq -r --arg e "$2" '.[] | "\($e) `\(.path)` — **\(.owner.name)**"' "$1"
+          }
+
+          full_list() {   # 현재 잠긴 파일 전체 목록
+            jq -r '.[] | "• `\(.path)`\n    ↳ **\(.owner.name)** · \(.locked_at[0:10])"' curr.json
           }
 
           if [ "$KIND" = "full" ]; then
             if [ "$COUNT" -eq 0 ]; then
               BODY="🔓 **잠긴 에셋 없음** — 모든 파일이 편집 가능합니다."
             else
-              LIST=$(jq -r '.[] | "• `\(.path)`\n    ↳ **\(.owner.name)** · \(.locked_at[0:10])"' curr.json)
-              BODY=$(printf '🔒 **잠긴 에셋 %s개**\n\n%s\n\n해제: `git lfs unlock <경로>`' "$COUNT" "$LIST")
+              BODY=$(printf '🔒 **잠긴 에셋 %s개**\n\n%s\n\n해제: `git lfs unlock <경로>`' "$COUNT" "$(full_list)")
             fi
           else
             # 락 id 기준으로 새로 생긴 것과 사라진 것을 추립니다.
@@ -104,7 +107,13 @@ jobs:
             : > parts.txt
             if [ "$N" -gt 0 ]; then fmt new.json  "🔒" >> parts.txt; fi
             if [ "$G" -gt 0 ]; then fmt gone.json "🔓" >> parts.txt; fi
-            BODY=$(printf '%s\n\n현재 잠긴 파일 %s개' "$(cat parts.txt)" "$COUNT")
+            # 변화만 보면 전체 상황을 알 수 없으므로 현재 목록을 함께 붙입니다.
+            if [ "$COUNT" -eq 0 ]; then
+              TAIL="🔓 현재 잠긴 파일 없음 — 모든 파일이 편집 가능합니다."
+            else
+              TAIL=$(printf '📋 **현재 잠긴 파일 %s개**\n%s' "$COUNT" "$(full_list)")
+            fi
+            BODY=$(printf '%s\n\n%s' "$(cat parts.txt)" "$TAIL")
           fi
 
           echo "send=true" >> "$GITHUB_OUTPUT"

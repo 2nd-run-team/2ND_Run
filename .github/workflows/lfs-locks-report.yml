@@ -101,14 +101,10 @@ jobs:
               exit 0
             fi
 
-            PARTS=""
-            [ "$N" -gt 0 ] && PARTS=$(fmt new.json "🔒")
-            if [ "$G" -gt 0 ]; then
-              [ -n "$PARTS" ] && PARTS="$PARTS
-"
-              PARTS="$PARTS$(fmt gone.json "🔓")"
-            fi
-            BODY=$(printf '%s\n\n현재 잠긴 파일 %s개' "$PARTS" "$COUNT")
+            : > parts.txt
+            if [ "$N" -gt 0 ]; then fmt new.json  "🔒" >> parts.txt; fi
+            if [ "$G" -gt 0 ]; then fmt gone.json "🔓" >> parts.txt; fi
+            BODY=$(printf '%s\n\n현재 잠긴 파일 %s개' "$(cat parts.txt)" "$COUNT")
           fi
 
           echo "send=true" >> "$GITHUB_OUTPUT"

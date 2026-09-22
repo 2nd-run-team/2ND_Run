@@ -54,6 +54,22 @@ jobs:
           [ "$FAIL" -eq 0 ] && echo "OK: 대용량 비-LFS 파일 없음"
           exit $FAIL
 
+      - name: C++ 모듈 선언 확인
+        # Source/ 가 있는데 .uproject 에 Modules 선언이 없으면 에디터가 C++ 모듈을
+        # 로드하지 않은 채 열립니다. 그 클래스를 상속한 블루프린트가 전부 깨지는데,
+        # 에러 없이 조용히 깨져서 원인을 찾기가 매우 어렵습니다.
+        run: |
+          if [ -z "$(git ls-files 'Source/*')" ]; then
+            echo "Source/ 없음 — 검사 건너뜀"
+            exit 0
+          fi
+          UPROJECT=$(git ls-files '*.uproject' | head -1)
+          if ! grep -q '"Modules"' "$UPROJECT"; then
+            echo "::error file=$UPROJECT::Source/ 가 있는데 Modules 선언이 없습니다. C++ 모듈이 로드되지 않아 블루프린트가 조용히 깨집니다."
+            exit 1
+          fi
+          echo "OK: C++ 모듈 선언됨"
+
       - name: 엔진 버전 고정 확인
         env:
           EXPECTED_ENGINE: "5.8"   # 업그레이드 시 README/CONTRIBUTING 과 함께 수정

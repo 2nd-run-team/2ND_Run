@@ -24,6 +24,8 @@ Plugins/**/Build/
 .xcodeproj/
 .xcworkspace/
 *.sln
+*.slnx
+.vsconfig
 *.suo
 *.xcodeproj
 *.xcworkspace

@@ -13,6 +13,16 @@ git config lfs.locksverify true        # 락 검증 활성화
 > `git lfs install` 을 하지 않고 clone 하면 `.uasset` 이 120바이트짜리 포인터 텍스트로
 > 내려옵니다. 에디터에서 에셋이 깨져 보이면 이것부터 확인하세요.
 
+clone 후 **빌드**까지 해야 에디터가 열립니다 (C++ 프로젝트):
+
+```
+SecondRun.uproject 우클릭 → Generate Visual Studio project files
+→ SecondRun.sln 열기 → Development Editor / Win64 → 빌드
+```
+
+Visual Studio 2022 의 `C++를 사용한 게임 개발` 워크로드가 없으면 여기서
+막힙니다. 자세한 절차는 [README.md](README.md#시작하기) 참고.
+
 ## 0.5. 엔진 버전 — 5.8.2 고정
 
 전원이 **Unreal Engine 5.8.2**를 씁니다. 패치 번호까지 맞춰야 합니다.
@@ -65,6 +75,25 @@ git lfs unlock Content/Maps/MainLevel.umap
 - **레벨(`.umap`) 작업은 반드시 락을 먼저 잡는다.** 예외 없음.
 - 락은 당일 안에 푼다. 오래 잡아야 하면 팀 채널에 공유.
 - 남의 락을 `--force` 로 푸는 건 본인 동의 후에만.
+
+## 2.5. C++ 작업 규칙
+
+`Source/` 의 `.cpp` / `.h` 는 **락이 필요 없습니다.** 일반 텍스트라 git 이
+머지할 수 있습니다. 에셋 락 규칙은 `Content/` 에만 적용됩니다.
+
+대신 C++ 쪽에는 다른 제약이 있습니다:
+
+- **`Source/` 를 건드린 PR 은 머지 후 전원이 리빌드해야 합니다.** 팀 채널에
+  알려주세요. 모르고 pull 받으면 에디터가 크래시하거나 안 열립니다.
+- **새 `UCLASS` / `UPROPERTY` 추가 후에는** `Generate Visual Studio project
+  files` 를 다시 돌려야 IDE 와 에디터에 반영됩니다.
+- **`.Build.cs` 에 모듈 의존성을 추가했다면** PR 본문에 명시하세요. 빌드가
+  깨지는 원인 1순위입니다.
+- **C++ 클래스 이름을 바꾸거나 지우지 마세요.** 그 클래스를 상속한 블루프린트가
+  통째로 깨지고, 복구하려면 에셋을 다시 만들어야 합니다. 꼭 필요하면 팀 합의 후
+  진행하고 `Core Redirects` 를 `Config/DefaultEngine.ini` 에 추가하세요.
+- `Binaries/`, `Intermediate/`, `*.sln`, `.vs/` 는 커밋 대상이 아닙니다.
+  `.gitignore` 가 막고 있지만 `-f` 로 강제 추가하지 마세요.
 
 ## 3. 커밋 메시지
 

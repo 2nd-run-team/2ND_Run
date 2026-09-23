@@ -74,8 +74,13 @@ C++ 프로젝트라 clone 직후에는 컴파일이 필요합니다. `.uproject`
 
 **6. 에디터에서 소스 컨트롤 연결** (에셋 락 기능)
 
-Plugins → `Git LFS 2 Source Control` 활성화 → 재시작 → 우하단 Source Control
-→ Provider `Git (beta version)` → **Use Git LFS file locking workflow** 체크
+`Plugins/GitSourceControl/` 에 포함된 `Git LFS 2` 플러그인은 프로젝트에서 자동 활성화됩니다.
+우하단 Source Control → Provider `Git LFS 2` → **Uses Git LFS 2 File Locking workflow** 체크
+→ **LFS Username** 에 자신의 GitHub 사용자명 입력. 에셋 작업 전 콘텐츠 브라우저에서
+해당 파일을 우클릭해 **Check Out** 으로 락을 잡습니다.
+
+락 기능을 사용하려면 GitHub 인증이 필요합니다. 플러그인의 에디터 내 Pull/Submit 대신
+팀 브랜치와 PR 절차를 사용하세요. Pull은 rebase를, Submit은 직접 push를 할 수 있습니다.
 
 ## 폴더 구조
 

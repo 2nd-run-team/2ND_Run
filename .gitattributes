@@ -10,6 +10,7 @@
 # --- Unreal 에셋 (반드시 LFS + Lock) ---
 *.uasset  filter=lfs diff=lfs merge=lfs -text lockable
 *.umap    filter=lfs diff=lfs merge=lfs -text lockable
+Plugins/GitSourceControl/git-lfs.exe filter=lfs diff=lfs merge=lfs -text
 
 # --- 이미지 ---
 *.png     filter=lfs diff=lfs merge=lfs -text lockable

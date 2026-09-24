@@ -92,8 +92,9 @@ jobs:
             fi
           else
             # 락 id 기준으로 새로 생긴 것과 사라진 것을 추립니다.
-            NEW=$(jq -s '[.[0][] | select(.id as $i | ([.[1][].id]) | index($i) | not)]' curr.json prev.json)
-            GONE=$(jq -s '[.[1][] | select(.id as $i | ([.[0][].id]) | index($i) | not)]' curr.json prev.json)
+            # select 안에서 . 은 개별 락이므로, 비교할 배열은 변수로 먼저 묶어 둡니다.
+            NEW=$(jq -s '.[1] as $p | [.[0][] | select(.id | IN($p[].id) | not)]' curr.json prev.json)
+            GONE=$(jq -s '.[0] as $c | [.[1][] | select(.id | IN($c[].id) | not)]' curr.json prev.json)
             echo "$NEW"  > new.json
             echo "$GONE" > gone.json
 

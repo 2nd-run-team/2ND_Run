@@ -35,6 +35,8 @@ public:
     float SprintSpeed = 700.0f;
 
 protected:
+    virtual void BeginPlay() override;
+
     virtual void UpdateFromCompressedFlags(uint8 Flags) override;
 
 private:

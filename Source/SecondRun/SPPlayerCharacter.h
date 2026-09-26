@@ -62,4 +62,6 @@ private:
 
     FVector2D MoveInput = FVector2D::ZeroVector;
     bool bSprintHeld = false;
+    bool bReportedMissingController = false;
+    bool bReportedInvalidMovementComponent = false;
 };

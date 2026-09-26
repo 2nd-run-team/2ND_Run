@@ -1,6 +1,7 @@
 #include "SPPlayerCharacter.h"
 
 #include "SPCharacterMovementComponent.h"
+#include "SPDebug.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -51,11 +52,22 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
     Super::SetupPlayerInputComponent(PlayerInputComponent);
 
     UEnhancedInputComponent* Input =
-        CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+        Cast<UEnhancedInputComponent>(PlayerInputComponent);
 
-    checkf(
-        MoveAction && LookAction && JumpAction && SprintAction,
-        TEXT("Assign all Input Actions on BP_SPPlayerCharacter."));
+    if (!Input)
+    {
+        SP_DEBUG_LOG(Error, TEXT("%s: Input setup aborted: expected EnhancedInputComponent, received %s. Check Project Settings > Input > Default Input Component Class."),
+            *GetName(), *GetNameSafe(PlayerInputComponent));
+        return;
+    }
+
+    if (!MoveAction || !LookAction || !JumpAction || !SprintAction)
+    {
+        SP_DEBUG_LOG(Error, TEXT("%s: Input setup aborted: missing Input Action. Move=%s, Look=%s, Jump=%s, Sprint=%s. Assign all four actions in the player Blueprint Class Defaults."),
+            *GetName(), *GetNameSafe(MoveAction.Get()), *GetNameSafe(LookAction.Get()),
+            *GetNameSafe(JumpAction.Get()), *GetNameSafe(SprintAction.Get()));
+        return;
+    }
 
     Input->BindAction(
         MoveAction,
@@ -126,8 +138,15 @@ void ASPPlayerCharacter::Move(const FInputActionValue& Value)
 
     if (!Controller)
     {
+        if (!bReportedMissingController)
+        {
+            SP_DEBUG_LOG(Warning, TEXT("%s: Move input ignored: no Controller. Check possession and GameMode pawn/controller settings if this persists."),
+                *GetName());
+            bReportedMissingController = true;
+        }
         return;
     }
+    bReportedMissingController = false;
 
     const FRotator YawRotation(
         0.0f,
@@ -192,11 +211,23 @@ void ASPPlayerCharacter::StopSprint()
 void ASPPlayerCharacter::UpdateSprintRequest()
 {
     USPCharacterMovementComponent* Movement =
-        CastChecked<USPCharacterMovementComponent>(
+        Cast<USPCharacterMovementComponent>(
             GetCharacterMovement());
 
-    const bool bHasForwardInput = MoveInput.Y > 0.1f;
+    if (!Movement)
+    {
+        if (!bReportedInvalidMovementComponent)
+        {
+            SP_DEBUG_LOG(Error, TEXT("%s: Sprint request ignored: movement component is not SPCharacterMovementComponent. Check the Blueprint parent and the character constructor's default subobject class."),
+                *GetName());
+            bReportedInvalidMovementComponent = true;
+        }
+        return;
+    }
+    bReportedInvalidMovementComponent = false;
 
-    Movement->SetSprintRequested(
-        bSprintHeld && bHasForwardInput);
+    const bool bHasForwardInput = MoveInput.Y > 0.1f;
+    const bool bRequested = bSprintHeld && bHasForwardInput;
+
+    Movement->SetSprintRequested(bRequested);
 }

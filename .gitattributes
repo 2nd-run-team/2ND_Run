@@ -66,9 +66,9 @@ Plugins/GitSourceControl/git-lfs.exe filter=lfs diff=lfs merge=lfs -text
 *.uproject   text eol=crlf
 *.uplugin    text eol=crlf
 *.ini        text eol=crlf
-*.h          text
-*.hpp        text
-*.cpp        text
+*.h          text eol=crlf
+*.hpp        text eol=crlf
+*.cpp        text eol=crlf
 *.cs         text
 *.md         text
 *.json       text

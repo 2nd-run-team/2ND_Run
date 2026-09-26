@@ -1,4 +1,5 @@
 #include "SPCharacterMovementComponent.h"
+#include "SPDebug.h"
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementReplication.h"
@@ -134,6 +135,23 @@ USPCharacterMovementComponent::USPCharacterMovementComponent()
     bUseControllerDesiredRotation = false;
 }
 
+void USPCharacterMovementComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (!CharacterOwner)
+    {
+        SP_DEBUG_LOG(Error, TEXT("%s: Movement initialized without a Character owner. Attach this component through SPPlayerCharacter's default movement component."), *GetName());
+        return;
+    }
+
+    if (SprintSpeed < MaxWalkSpeed)
+    {
+        SP_DEBUG_LOG(Warning, TEXT("%s: SprintSpeed (%.1f) is below MaxWalkSpeed (%.1f); GetMaxSpeed will use MaxWalkSpeed for sprinting. Check Blueprint movement defaults."),
+            *GetNameSafe(CharacterOwner), SprintSpeed, MaxWalkSpeed);
+    }
+}
+
 void USPCharacterMovementComponent::SetSprintRequested(
     bool bRequested)
 {
@@ -226,6 +244,7 @@ USPCharacterMovementComponent::GetPredictionData_Client() const
 
         MutableThis->ClientPredictionData =
             new FNetworkPredictionData_Client_SP(*this);
+
     }
 
     return ClientPredictionData;

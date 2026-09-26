@@ -76,3 +76,9 @@ Plugins/GitSourceControl/git-lfs.exe filter=lfs diff=lfs merge=lfs -text
 *.yaml       text eol=lf
 *.sh         text eol=lf
 *.bat        text eol=crlf
+
+# --- 레벨 배치 액터 (OFPA) — 락 제외 ---
+# 액터 하나당 파일 하나라 동시 수정 충돌이 드물고, 레벨 편집할 때마다
+# 수십 개 파일이 read-only 로 막혀서 lockable 을 끈다. (.umap 은 계속 락)
+Content/__ExternalActors__/**   -lockable
+Content/__ExternalObjects__/**  -lockable

@@ -1,7 +1,11 @@
 #include "SPPlayerCharacter.h"
 
+#include "SPCargo.h"
 #include "SPCharacterMovementComponent.h"
 #include "SPDebug.h"
+
+#include "Engine/World.h"
+#include "Net/UnrealNetwork.h"
 
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
@@ -53,6 +57,13 @@ ASPPlayerCharacter::ASPPlayerCharacter(
 
     GetMesh()->SetOwnerNoSee(true);
     GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // 운반 포즈의 오른손을 따라간다. 상대 위치/회전은 손 기준이며 BP에서 맞춘다.
+    CargoHoldPoint =
+        CreateDefaultSubobject<USceneComponent>(
+            TEXT("CargoHoldPoint"));
+
+    CargoHoldPoint->SetupAttachment(GetMesh(), TEXT("hand_r"));
 
     JumpMaxCount = 1;
     JumpMaxHoldTime = 0.0f;
@@ -141,6 +152,20 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
         ETriggerEvent::Canceled,
         this,
         &ASPPlayerCharacter::StopSprint);
+
+    if (InteractAction)
+    {
+        Input->BindAction(
+            InteractAction,
+            ETriggerEvent::Started,
+            this,
+            &ASPPlayerCharacter::Interact);
+    }
+    else
+    {
+        SP_DEBUG_LOG(Warning, TEXT("%s: Interact disabled: InteractAction is not assigned in the player Blueprint Class Defaults."),
+            *GetName());
+    }
 
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
     // [TEMP-GRAVITY-TOGGLE] 테스트 전용이라 별도 Input Action 에셋 없이 임시로 바인딩한다.
@@ -286,6 +311,91 @@ void ASPPlayerCharacter::UpdateSprintRequest()
         && bHasForwardInput;
 
     Movement->SetSprintRequested(bRequested);
+}
+
+void ASPPlayerCharacter::GetLifetimeReplicatedProps(
+    TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(ASPPlayerCharacter, HeldCargo);
+}
+
+bool ASPPlayerCharacter::IsCarryingCargo() const
+{
+    return IsValid(HeldCargo);
+}
+
+void ASPPlayerCharacter::Interact()
+{
+    if (IsCarryingCargo())
+    {
+        return;
+    }
+
+    if (ASPCargo* Cargo = FindCargoInView())
+    {
+        ServerRequestPickup(Cargo);
+    }
+}
+
+ASPCargo* ASPPlayerCharacter::FindCargoInView() const
+{
+    if (!Controller)
+    {
+        return nullptr;
+    }
+
+    // 몸 기준 눈높이는 무중력에서 몸이 기울면 화면과 어긋나므로, 실제 카메라 시점에서 쏜다.
+    FVector ViewLocation;
+    FRotator ViewRotation;
+    Controller->GetPlayerViewPoint(ViewLocation, ViewRotation);
+
+    const FVector TraceEnd =
+        ViewLocation + ViewRotation.Vector() * CargoTraceDistance;
+
+    const FCollisionQueryParams Params(
+        SCENE_QUERY_STAT(SPCargoTrace), false, this);
+
+    FHitResult Hit;
+    const bool bHit = GetWorld()->SweepSingleByChannel(
+        Hit,
+        ViewLocation,
+        TraceEnd,
+        FQuat::Identity,
+        ECC_Visibility,
+        FCollisionShape::MakeSphere(CargoTraceRadius),
+        Params);
+
+    return bHit ? Cast<ASPCargo>(Hit.GetActor()) : nullptr;
+}
+
+void ASPPlayerCharacter::ServerRequestPickup_Implementation(
+    ASPCargo* TargetCargo)
+{
+    // 동시에 같은 화물을 요청한 경우의 패배나 연타는 정상 흐름이라 기록하지 않는다.
+    if (IsCarryingCargo() || !IsValid(TargetCargo)
+        || TargetCargo->IsCarried())
+    {
+        return;
+    }
+
+    if (GetDistanceTo(TargetCargo) > CargoServerPickupRange)
+    {
+        SP_DEBUG_LOG(Warning, TEXT("%s: Pickup rejected: %s is %.0f away (limit %.0f). Raise CargoServerPickupRange if this happens under normal latency."),
+            *GetName(), *TargetCargo->GetName(),
+            GetDistanceTo(TargetCargo), CargoServerPickupRange);
+        return;
+    }
+
+    if (!TargetCargo->AttachToCarrier(this, CargoHoldPoint))
+    {
+        SP_DEBUG_LOG(Error, TEXT("%s: Pickup failed: could not attach %s to CargoHoldPoint. Check that the cargo root is not simulating physics."),
+            *GetName(), *TargetCargo->GetName());
+        return;
+    }
+
+    HeldCargo = TargetCargo;
 }
 
 void ASPPlayerCharacter::RefreshZeroGravityInput()

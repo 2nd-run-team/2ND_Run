@@ -11,8 +11,10 @@
 #include "SPGravityTypes.h"
 #include "SPPlayerCharacter.generated.h"
 
+class ASPCargo;
 class UCameraComponent;
 class UInputAction;
+class USceneComponent;
 struct FInputActionValue;
 struct FKey;
 
@@ -36,6 +38,13 @@ public:
 
     virtual void PawnClientRestart() override;
 
+    virtual void GetLifetimeReplicatedProps(
+        TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+    /** 애님 BP의 운반 포즈 전환용. HeldCargo가 복제되므로 다른 플레이어 화면에서도 맞다. */
+    UFUNCTION(BlueprintPure, Category = "Cargo")
+    bool IsCarryingCargo() const;
+
 protected:
     virtual void SetupPlayerInputComponent(
         UInputComponent* PlayerInputComponent) override;
@@ -46,6 +55,16 @@ protected:
         BlueprintReadOnly,
         Category = "Components")
     TObjectPtr<UCameraComponent> FirstPersonCamera;
+
+    /**
+     * 든 화물이 붙는 위치. 메시의 hand_r 소켓에 붙어 운반 포즈의 손을 따라간다.
+     * 손 기준 위치/회전은 BP 컴포넌트 Details에서 맞춘다.
+     */
+    UPROPERTY(
+        VisibleAnywhere,
+        BlueprintReadOnly,
+        Category = "Components")
+    TObjectPtr<USceneComponent> CargoHoldPoint;
 
     /** Axis2D: X=좌우, Y=전후. 키 배치는 기존 Input Mapping Context에서 설정한다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
@@ -59,6 +78,21 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputAction> SprintAction; // Shift: 중력에서는 달리기, 무중력에서는 몸 아래쪽 추진.
+
+    /** 비어 있으면 상호작용만 비활성화되고 다른 입력은 그대로 동작한다. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    TObjectPtr<UInputAction> InteractAction;
+
+    /** 화면 중앙에서 화물을 찾는 구체 트레이스 길이. */
+    UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
+    float CargoTraceDistance = 250.0f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
+    float CargoTraceRadius = 20.0f;
+
+    /** 서버가 허용하는 캐릭터-화물 최대 거리. 지연과 액터 원점 차이를 감안해 트레이스 길이보다 크게 둔다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
+    float CargoServerPickupRange = 400.0f;
 
     /** 마우스 입력 배율. 이동 컴포넌트의 몸 회전 속도와 별개로 시선 반응을 조절한다. */
     UPROPERTY(
@@ -85,6 +119,16 @@ private:
     void StopSprint();
 
     void UpdateSprintRequest();
+
+    // 클라이언트는 화면 기준으로 대상만 고르고, 판정과 부착은 서버가 한다.
+    void Interact();
+    ASPCargo* FindCargoInView() const;
+
+    UFUNCTION(Server, Reliable)
+    void ServerRequestPickup(ASPCargo* TargetCargo);
+
+    UPROPERTY(Replicated)
+    TObjectPtr<ASPCargo> HeldCargo;
 
     // 키를 누른 상태를 유지해 중력 전환 후에도 같은 입력을 새 모드에서 해석한다.
     FVector2D MoveInput = FVector2D::ZeroVector;

@@ -21,7 +21,8 @@ public class SecondRun : ModuleRules
 			"Slate"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		// 무중력 이동 패킷의 FVector_NetQuantize10 직렬화 구현에 필요하다.
+		PrivateDependencyModuleNames.AddRange(new string[] { "NetCore" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"SecondRun",

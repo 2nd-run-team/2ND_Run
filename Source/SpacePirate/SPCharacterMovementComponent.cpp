@@ -1,5 +1,7 @@
 #include "SPCharacterMovementComponent.h"
 #include "SPDebug.h"
+#include "SPGravityWorldSubsystem.h"
+#include "Engine/ScopedMovementUpdate.h"
 
 #include "Components/CapsuleComponent.h"
 #include "Engine/NetSerialization.h"
@@ -27,7 +29,7 @@ public:
     using Super = FSavedMove_Character;
 
     bool bSavedSprintRequested = false;
-    bool bSavedZeroGravity = false;
+    bool bSavedCustomGravityMovement = false;
 
     FVector SavedLocalThrustInput = FVector::ZeroVector;
 
@@ -37,7 +39,7 @@ public:
         Super::Clear();
 
         bSavedSprintRequested = false;
-        bSavedZeroGravity = false;
+        bSavedCustomGravityMovement = false;
         SavedLocalThrustInput = FVector::ZeroVector;
     }
 
@@ -62,9 +64,9 @@ public:
         const FSavedMove_SP* NewSPMove =
             static_cast<const FSavedMove_SP*>(NewMove.Get());
 
-        // 첫 버전은 무중력 이동 기록을 합치지 않는다.
+        // 무중력/복귀 상태의 이동 기록은 합치지 않는다.
         // 몸 회전과 추진 방향을 각 이동 시점에 맞춰 계산한다.
-        if (bSavedZeroGravity || NewSPMove->bSavedZeroGravity)
+        if (bSavedCustomGravityMovement || NewSPMove->bSavedCustomGravityMovement)
         {
             return false;
         }
@@ -97,7 +99,7 @@ public:
             static_cast<const FSavedMove_SP*>(LastAckedMove.Get());
 
         // 입력 시작/해제를 중요한 이동으로 표시해 손실된 기록의 재전송 후보에 포함한다.
-        if (bSavedZeroGravity != LastSPMove->bSavedZeroGravity
+        if (bSavedCustomGravityMovement != LastSPMove->bSavedCustomGravityMovement
             || !SavedLocalThrustInput.Equals(
                 LastSPMove->SavedLocalThrustInput, 0.001f))
         {
@@ -125,10 +127,10 @@ public:
 
         // 이 이동을 시작할 때의 입력을 캡처한다. 완료 후 몸 회전은 부모가 SavedRotation에 저장한다.
         bSavedSprintRequested = Movement->IsSprintRequested();
-        bSavedZeroGravity = Movement->IsZeroGravity();
+        bSavedCustomGravityMovement = Movement->IsCustomGravityMovement();
         SavedLocalThrustInput = Movement->GetZeroGravityInput();
 
-        bForceNoCombine |= bSavedZeroGravity;
+        bForceNoCombine |= bSavedCustomGravityMovement;
     }
 
     virtual void PrepMoveFor(ACharacter* Character) override
@@ -246,6 +248,43 @@ USPCharacterMovementComponent::USPCharacterMovementComponent()
     bUseControllerDesiredRotation = false;
 }
 
+// 작업자: 김세훈 | 정지한 서버 캐릭터도 버튼 전환과 영역 제거를 반영한다.
+void USPCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+    FActorComponentTickFunction* ThisTickFunction)
+{
+    RefreshGravityFromZones();
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
+// 작업자: 김세훈 | 원격 입력 처리에서도 현재 서버 위치의 환경을 확인한다.
+void USPCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
+{
+    Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
+    RefreshGravityFromZones();
+}
+
+// 작업자: 김세훈 | 조회는 서버 내부 처리이며 상태가 다를 때만 네트워크 전환을 요청한다.
+void USPCharacterMovementComponent::RefreshGravityFromZones()
+{
+    if (!HasValidData() || !CharacterOwner->HasAuthority()
+        || !CharacterOwner->HasActorBegunPlay() || MovementMode == MOVE_None)
+    {
+        return;
+    }
+    const USPGravityWorldSubsystem* Gravity = GetWorld()->GetSubsystem<USPGravityWorldSubsystem>();
+    if (!Gravity)
+    {
+        return;
+    }
+    // NOTICE [GRAVITY-SCALE]: 플레이어/소수 영역을 위한 전체 목록 조회.
+    // 대량 화물 연결 전 후보 영역 캐시를 검토한다. 원격 이동 한 Tick에 여러 조회가 가능하다.
+    const ESPGravityMode Desired = Gravity->GetGravityModeAtLocation(UpdatedComponent->GetComponentLocation());
+    if (Desired != GetGravityMode())
+    {
+        SetGravityMode(Desired);
+    }
+}
+
 void USPCharacterMovementComponent::BeginPlay()
 {
     Super::BeginPlay();
@@ -308,6 +347,11 @@ bool USPCharacterMovementComponent::HasForwardAcceleration() const
 
 float USPCharacterMovementComponent::GetMaxSpeed() const
 {
+    if (IsGravityRecovery())
+    {
+        return FMath::Max(MaxWalkSpeed, 0.0f);
+    }
+
     if (IsZeroGravity())
     {
         return FMath::Max(ZeroGravityMaxSpeed, 1.0f);
@@ -349,7 +393,7 @@ void USPCharacterMovementComponent::UpdateFromCompressedFlags(
     bSprintRequested =
         (Flags & FSavedMove_Character::FLAG_Custom_0) != 0;
 
-    if (IsZeroGravity() && CharacterOwner)
+    if (IsCustomGravityMovement() && CharacterOwner)
     {
         // 무중력의 Space는 점프가 아니라 추진 입력이다.
         CharacterOwner->StopJumping();
@@ -458,25 +502,8 @@ bool USPCharacterMovementComponent::SetGravityMode(
     }
     else
     {
-        const FQuat UprightRotation =
-            FRotator(
-                0.0f,
-                CharacterOwner->GetActorRotation().Yaw,
-                0.0f).Quaternion();
-
-        // 벽이나 천장에 파고들면서 몸을 세우지 않는다.
-        if (!TrySetBodyRotation(UprightRotation))
-        {
-            SP_DEBUG_LOG(
-                Warning,
-                TEXT("%s: Gravity change rejected: not enough space to stand upright. Move away from nearby geometry."),
-                *GetNameSafe(CharacterOwner));
-
-            return false;
-        }
-
-        // 공중이라면 낙하하고, 바닥에 닿으면 Walking으로 전환.
-        SetMovementMode(MOVE_Falling);
+        // 환경 중력은 즉시 적용한다. 직립 불가 시에는 복귀 상태에서 낙하/수평 이동한다.
+        SetMovementMode(MOVE_Custom, GravityRecoveryCustomMode);
     }
 
     Velocity = PreviousVelocity;
@@ -579,6 +606,83 @@ bool USPCharacterMovementComponent::TrySetBodyRotation(
     return true;
 }
 
+// 작업자: 김세훈 | 직립 실패 시 시험 이동을 취소해 천장/바닥 관통을 방지한다.
+bool USPCharacterMovementComponent::TryRestoreUpright()
+{
+    if (!HasValidData())
+    {
+        return false;
+    }
+    const FQuat Upright = FRotator(0.0f, UpdatedComponent->GetComponentRotation().Yaw, 0.0f).Quaternion();
+    if (TrySetBodyRotation(Upright))
+    {
+        return true;
+    }
+    const UCapsuleComponent* Capsule = CharacterOwner->GetCapsuleComponent();
+    if (!Capsule)
+    {
+        return false;
+    }
+    const float Radius = Capsule->GetScaledCapsuleRadius();
+    const float HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+    const FVector CapsuleUp = UpdatedComponent->GetComponentQuat().GetUpVector();
+    const float VerticalHalfHeight = Radius + (HalfHeight - Radius) * FMath::Abs(CapsuleUp.Z);
+    // 누운 캡슐을 같은 중심에서 세우면 바닥에 박힐 수 있어 필요한 높이만큼만 상승을 시도한다.
+    const float Lift = FMath::Max(0.0f, HalfHeight - VerticalHalfHeight)
+        + FMath::Clamp(GravityRecoveryClearance, 0.0f, 5.0f);
+    if (Lift <= KINDA_SMALL_NUMBER)
+    {
+        return false;
+    }
+    FScopedMovementUpdate ScopedMove(UpdatedComponent, EScopedUpdate::DeferredUpdates);
+    FHitResult Hit;
+    SafeMoveUpdatedComponent(FVector(0.0f, 0.0f, Lift), UpdatedComponent->GetComponentQuat(), true, Hit);
+    if (!Hit.bBlockingHit && !Hit.bStartPenetrating && TrySetBodyRotation(Upright))
+    {
+        return true;
+    }
+    ScopedMove.RevertMove();
+    return false;
+}
+
+// 작업자: 김세훈 | 중력을 적용하면서 직립 가능 공간을 확보한다. 막힌 회전은 정상 충돌이라 기록하지 않는다.
+void USPCharacterMovementComponent::PhysGravityRecovery(float DeltaTime, int32 Iterations)
+{
+    float RemainingTime = DeltaTime;
+    const int32 MaxSteps = FMath::Clamp(ZeroGravityMaxSimulationIterations, 1, 128);
+    const float MaxStepTime = FMath::Clamp(ZeroGravityMaxSimulationTimeStep, 0.001f, 0.05f);
+    for (int32 Step = 0; Step < MaxSteps && RemainingTime > MIN_TICK_TIME; ++Step)
+    {
+        if (TryRestoreUpright())
+        {
+            const FVector PreviousVelocity = Velocity;
+            SetMovementMode(MOVE_Falling);
+            Velocity = PreviousVelocity;
+            // 남은 시간은 일반 낙하/착지 처리에 넘긴다.
+            StartNewPhysics(RemainingTime, Iterations);
+            return;
+        }
+        const float StepTime = Step == MaxSteps - 1 ? RemainingTime : FMath::Min(RemainingTime, MaxStepTime);
+        RemainingTime -= StepTime;
+        // 복귀 중에는 시선 Yaw 기준 수평 탈출 입력만 허용한다. Space/Shift 추진은 무시한다.
+        const FVector Input = FVector(LocalThrustInput.X, LocalThrustInput.Y, 0.0).GetClampedToMaxSize(1.0f);
+        const FQuat Yaw = FRotator(0.0f, GetSimulationViewRotation().Yaw, 0.0f).Quaternion();
+        FVector HorizontalVelocity(Velocity.X, Velocity.Y, 0.0);
+        const float PreviousSpeed = HorizontalVelocity.Size();
+        HorizontalVelocity += Yaw.RotateVector(Input) * FMath::Max(GravityRecoveryAcceleration, 0.0f) * StepTime;
+        HorizontalVelocity = HorizontalVelocity.GetClampedToMaxSize(FMath::Max(FMath::Max(MaxWalkSpeed, 0.0f), PreviousSpeed));
+        Velocity.X = HorizontalVelocity.X;
+        Velocity.Y = HorizontalVelocity.Y;
+        // 종단 속도까지 포함하는 엔진의 낙하 속도 계산을 사용한다.
+        Velocity = NewFallVelocity(Velocity, FVector(0.0f, 0.0f, GetGravityZ()), StepTime);
+        MoveWithCollision(StepTime);
+        if (!HasValidData() || !IsGravityRecovery())
+        {
+            return;
+        }
+    }
+}
+
 void USPCharacterMovementComponent::RotateZeroGravityBody(
     float DeltaTime)
 {
@@ -654,6 +758,12 @@ void USPCharacterMovementComponent::MoveZeroGravity(
 
     Velocity = Velocity.GetClampedToMaxSize(AllowedSpeed);
 
+    MoveWithCollision(DeltaTime);
+}
+
+// 작업자: 김세훈 | 무중력/복귀 상태가 동일한 충돌 및 벽 접선 이동을 사용한다.
+void USPCharacterMovementComponent::MoveWithCollision(float DeltaTime)
+{
     float RemainingMoveTime = DeltaTime;
 
     // 모서리에서 여러 면과 충돌할 수 있으므로 제한적으로 반복.
@@ -686,7 +796,7 @@ void USPCharacterMovementComponent::MoveZeroGravity(
             RemainingMoveTime,
             Velocity * RemainingMoveTime);
 
-        if (!HasValidData() || !IsZeroGravity())
+        if (!HasValidData() || !IsCustomGravityMovement())
         {
             return;
         }
@@ -712,7 +822,7 @@ void USPCharacterMovementComponent::PhysCustom(
     float DeltaTime,
     int32 Iterations)
 {
-    if (!IsZeroGravity())
+    if (!IsCustomGravityMovement())
     {
         Super::PhysCustom(DeltaTime, Iterations);
         return;
@@ -727,10 +837,16 @@ void USPCharacterMovementComponent::PhysCustom(
     {
         SP_DEBUG_LOG(
             Error,
-            TEXT("%s: Invalid zero-gravity velocity. Movement was stopped."),
+            TEXT("%s: Invalid custom gravity velocity. Movement was stopped."),
             *GetNameSafe(CharacterOwner));
 
         StopMovementImmediately();
+        return;
+    }
+
+    if (IsGravityRecovery())
+    {
+        PhysGravityRecovery(DeltaTime, Iterations);
         return;
     }
 
@@ -793,7 +909,7 @@ bool USPCharacterMovementComponent::ServerCheckClientError(
     FName ClientBaseBoneName,
     uint8 ClientMovementMode)
 {
-    if (IsZeroGravity() && UpdatedComponent)
+    if (IsCustomGravityMovement() && UpdatedComponent)
     {
         if (const FCharacterNetworkMoveData* BaseMoveData =
             GetCurrentNetworkMoveData())

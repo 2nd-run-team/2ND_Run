@@ -1,10 +1,9 @@
 #pragma once
 
 // 역할: 입력과 로컬 카메라를 관리한다. 실제 이동/몸 회전/예측은 SPCharacterMovementComponent가 담당한다.
-// NOTICE [TEMP-GRAVITY-TOGGLE]: '=' 키 중력 전환은 개발용 임시 기능이다.
-// 정식 중력 구역 도입 후 이 헤더의 DebugToggleGravity/ServerSetDebugGravityMode 선언과
-// .cpp의 키 바인딩 및 두 함수 구현을 함께 삭제한다. 이동 컴포넌트의 SetGravityMode는 유지한다.
-// Shipping/Test에서는 키 바인딩과 함수 내부 동작을 제외한다(RPC 선언/빈 함수 자체는 남는다).
+// NOTICE [TEMP-GRAVITY-SWITCH]: 정식 장치 도입 후 FindGravitySwitchInView/ServerUseGravitySwitch와
+// Interact의 버튼 우선 분기를 교체한다. 기존 화물 상호작용과 영역 시스템은 유지한다.
+// 작업자: 김세훈 (중력 영역/버튼 연동)
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
@@ -12,11 +11,11 @@
 #include "SPPlayerCharacter.generated.h"
 
 class ASPCargo;
+class ASPGravitySwitch;
 class UCameraComponent;
 class UInputAction;
 class USceneComponent;
 struct FInputActionValue;
-struct FKey;
 
 UCLASS()
 class SPACEPIRATE_API ASPPlayerCharacter : public ACharacter
@@ -94,6 +93,10 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
     float CargoServerPickupRange = 400.0f;
 
+    /** 임시 중력 버튼 검색 거리(cm). 서버도 같은 거리와 가림 상태를 재검사한다. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gravity|Interaction", meta = (ClampMin = "1.0"))
+    float GravitySwitchUseDistance = 250.0f;
+
     /** 마우스 입력 배율. 이동 컴포넌트의 몸 회전 속도와 별개로 시선 반응을 조절한다. */
     UPROPERTY(
         EditDefaultsOnly,
@@ -140,11 +143,12 @@ private:
     void RefreshZeroGravityInput();
     void UpdateCameraForMovementMode();
 
-    // [TEMP-GRAVITY-TOGGLE] 제거 대상. 로컬 입력 -> 소유 캐릭터 RPC -> 서버 모드 변경.
-    void DebugToggleGravity(FKey Key, FInputActionValue ActionValue);
+    /** 작업자: 김세훈 | [TEMP-GRAVITY-SWITCH] 실제 시선에서 첫 번째 버튼을 찾는다. */
+    ASPGravitySwitch* FindGravitySwitchInView() const;
 
+    /** 작업자: 김세훈 | [TEMP-GRAVITY-SWITCH] 서버에서 거리/시선을 재검사하고 버튼을 사용한다. */
     UFUNCTION(Server, Reliable)
-    void ServerSetDebugGravityMode(ESPGravityMode NewMode);
+    void ServerUseGravitySwitch(ASPGravitySwitch* TargetSwitch);
 
     bool bUpThrustHeld = false;
 

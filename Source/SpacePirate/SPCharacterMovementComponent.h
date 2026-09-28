@@ -24,6 +24,21 @@ public:
 
     // 엔진의 CustomMovementMode 식별자. 속도처럼 조절하는 튜닝 값이 아니다.
     static constexpr uint8 ZeroGravityCustomMode = 1;
+    static constexpr uint8 GravityRecoveryCustomMode = 2;
+
+    /** 작업자: 김세훈 | 중력은 적용되지만 캡슐 직립 공간을 확보하는 중인지 확인한다. */
+    UFUNCTION(BlueprintPure, Category = "Movement|Gravity")
+    bool IsGravityRecovery() const
+    {
+        return MovementMode == MOVE_Custom && CustomMovementMode == GravityRecoveryCustomMode;
+    }
+
+    /** 작업자: 김세훈 | 예측/충돌/몸 회전을 커스텀 코드가 처리하는 두 상태를 묶는다. */
+    bool IsCustomGravityMovement() const { return IsZeroGravity() || IsGravityRecovery(); }
+
+    /** 작업자: 김세훈 | 정지 중인 서버 캐릭터도 환경의 중력 변화를 반영한다. */
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+        FActorComponentTickFunction* ThisTickFunction) override;
 
     UFUNCTION(BlueprintPure, Category = "Movement|Gravity")
     bool IsZeroGravity() const
@@ -40,8 +55,7 @@ public:
             : ESPGravityMode::Gravity;
     }
 
-    // 테스트 키뿐 아니라 추후 중력 구역에서도 호출할 진입점.
-    // 실제 상태 변경은 서버만 수행한다.
+    // 중력 영역에서 호출하는 서버 전용 진입점. 직립 불가 시에도 복귀 상태에서 중력은 적용한다.
     UFUNCTION(
         BlueprintCallable,
         BlueprintAuthorityOnly,
@@ -157,7 +171,19 @@ public:
         meta = (ClampMin = "0.1", ClampMax = "45.0"))
     float NetworkBodyRotationTolerance = 2.0f;
 
+    /** 복귀 중 낮은 통로에서 빠져나오기 위한 WASD 수평 가속도(cm/s²). */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Gravity Recovery",
+        meta = (ClampMin = "0.0"))
+    float GravityRecoveryAcceleration = 600.0f;
+
+    /** 캡슐을 세울 때 지면 겹침을 피하기 위한 추가 높이(cm). */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Gravity Recovery",
+        meta = (ClampMin = "0.0", ClampMax = "5.0"))
+    float GravityRecoveryClearance = 2.0f;
+
 protected:
+    /** 작업자: 김세훈 | 원격 이동 패킷 처리 직전에도 서버의 영역 상태를 확인한다. */
+    virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
     virtual void BeginPlay() override;
 
     virtual void UpdateFromCompressedFlags(uint8 Flags) override;
@@ -183,6 +209,15 @@ protected:
         uint8 ClientMovementMode) override;
 
 private:
+    /** 작업자: 김세훈 | 서버에서 중심점의 영역을 조회하고 상태가 다를 때만 전환한다. */
+    void RefreshGravityFromZones();
+    /** 작업자: 김세훈 | 충돌 없는 직립 또는 제한된 상승+직립을 시도하고 실패하면 복원한다. */
+    bool TryRestoreUpright();
+    /** 작업자: 김세훈 | 직립 공간을 확보할 때까지 낙하와 수평 탈출 입력을 계산한다. */
+    void PhysGravityRecovery(float DeltaTime, int32 Iterations);
+    /** 작업자: 김세훈 | 무중력/복귀 상태가 공유하는 벽 충돌과 접선 이동. */
+    void MoveWithCollision(float DeltaTime);
+
     bool HasForwardAcceleration() const;
 
     FRotator GetSimulationViewRotation() const;

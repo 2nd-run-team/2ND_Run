@@ -1,6 +1,7 @@
 #include "SPPlayerCharacter.h"
 
 #include "SPCargo.h"
+#include "SPGravitySwitch.h"
 #include "SPCharacterMovementComponent.h"
 #include "SPDebug.h"
 
@@ -9,8 +10,6 @@
 
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
-#include "InputCoreTypes.h"
-#include "Framework/Commands/InputChord.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -19,9 +18,8 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 
-// NOTICE [TEMP-GRAVITY-TOGGLE]: 임시 '=' 키 전환 기능. 정식 중력 구역 도입 후 제거한다.
-// 삭제 위치: SetupPlayerInputComponent의 BindDebugKey, 파일 끝의 DebugToggleGravity/RPC 구현, 헤더 선언.
-// Shipping/Test에서는 바인딩과 실행 내용을 제외하며, RPC 선언과 빈 구현은 남는다.
+// NOTICE [TEMP-GRAVITY-SWITCH]: 정식 장치 도입 후 Interact의 버튼 분기와 버튼 검색/RPC를 교체한다.
+// 작업자: 김세훈 (중력 영역/버튼 연동). Shipping/Test에서는 임시 버튼 사용을 제외한다.
 
 ASPPlayerCharacter::ASPPlayerCharacter(
     const FObjectInitializer& ObjectInitializer)
@@ -167,15 +165,6 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
             *GetName());
     }
 
-#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
-    // [TEMP-GRAVITY-TOGGLE] 테스트 전용이라 별도 Input Action 에셋 없이 임시로 바인딩한다.
-    Input->BindDebugKey(
-        FInputChord(EKeys::Equals),
-        IE_Pressed,
-        this,
-        &ASPPlayerCharacter::DebugToggleGravity,
-        false);
-#endif
 }
 
 void ASPPlayerCharacter::Move(const FInputActionValue& Value)
@@ -200,9 +189,9 @@ void ASPPlayerCharacter::Move(const FInputActionValue& Value)
     const USPCharacterMovementComponent* Movement =
         Cast<USPCharacterMovementComponent>(GetCharacterMovement());
 
-    if (Movement && Movement->IsZeroGravity())
+    if (Movement && Movement->IsCustomGravityMovement())
     {
-        // 무중력 이동은 이동 컴포넌트가 저장된 몸 기준 입력으로 계산.
+        // 무중력/복귀 이동은 저장된 입력으로 이동 컴포넌트가 계산한다.
         return;
     }
 
@@ -250,7 +239,7 @@ void ASPPlayerCharacter::StartJump()
     const USPCharacterMovementComponent* Movement =
         Cast<USPCharacterMovementComponent>(GetCharacterMovement());
 
-    if (Movement && Movement->IsZeroGravity())
+    if (Movement && Movement->IsCustomGravityMovement())
     {
         return;
     }
@@ -306,7 +295,7 @@ void ASPPlayerCharacter::UpdateSprintRequest()
 
     const bool bHasForwardInput = MoveInput.Y > FMath::Clamp(SprintForwardInputThreshold, 0.0f, 0.99f);
     const bool bRequested =
-        !Movement->IsZeroGravity()
+        !Movement->IsCustomGravityMovement()
         && bSprintHeld
         && bHasForwardInput;
 
@@ -326,8 +315,16 @@ bool ASPPlayerCharacter::IsCarryingCargo() const
     return IsValid(HeldCargo);
 }
 
+// 작업자: 김세훈 | 임시 버튼을 우선 사용하고 기존 화물 상호작용으로 이어간다.
 void ASPPlayerCharacter::Interact()
 {
+#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
+    if (ASPGravitySwitch* Switch = FindGravitySwitchInView())
+    {
+        ServerUseGravitySwitch(Switch);
+        return;
+    }
+#endif
     if (IsCarryingCargo())
     {
         return;
@@ -429,7 +426,7 @@ void ASPPlayerCharacter::FaceRotation(
     const USPCharacterMovementComponent* Movement =
         Cast<USPCharacterMovementComponent>(GetCharacterMovement());
 
-    if (Movement && Movement->IsZeroGravity())
+    if (Movement && Movement->IsCustomGravityMovement())
     {
         // 엔진의 즉시 시선 추종을 막는다. 몸 회전은 예측/재생되는 PhysCustom에서만 처리한다.
         return;
@@ -448,19 +445,21 @@ void ASPPlayerCharacter::OnMovementModeChanged(
     const USPCharacterMovementComponent* Movement =
         Cast<USPCharacterMovementComponent>(GetCharacterMovement());
 
-    const bool bZeroGravity =
-        Movement && Movement->IsZeroGravity();
+    const bool bCustomGravity =
+        Movement && Movement->IsCustomGravityMovement();
 
     // 서버 변경뿐 아니라 복제로 모드가 바뀔 때도 동일한 회전/카메라 정책을 적용한다.
-    bUseControllerRotationYaw = !bZeroGravity;
+    bUseControllerRotationYaw = !bCustomGravity;
     bUseControllerRotationPitch = false;
     bUseControllerRotationRoll = false;
 
-    if (bZeroGravity)
+    if (bCustomGravity)
     {
         StopJumping();
     }
 
+    // 이 콜백은 보정 후 과거 이동 재생 중에도 실행된다.
+    // 여기서 현재 키 상태를 입력에 다시 쓰면 SavedMove의 과거 입력을 오염시킨다.
     UpdateCameraForMovementMode();
 }
 
@@ -495,7 +494,7 @@ void ASPPlayerCharacter::UpdateCameraForMovementMode()
     APlayerCameraManager* CameraManager =
         PC->PlayerCameraManager;
 
-    if (Movement->IsZeroGravity())
+    if (Movement->IsCustomGravityMovement())
     {
         if (!bCachedCameraPitchLimits)
         {
@@ -516,49 +515,53 @@ void ASPPlayerCharacter::UpdateCameraForMovementMode()
     }
 }
 
-// [TEMP-GRAVITY-TOGGLE] 클라이언트는 요청만 보낸다. 실제 전환은 서버 응답 후 적용된다.
-void ASPPlayerCharacter::DebugToggleGravity(FKey Key, FInputActionValue ActionValue)
+// 작업자: 김세훈 | [TEMP-GRAVITY-SWITCH] 화면 또는 서버 조준 방향에서 거리/가림을 검사한다.
+ASPGravitySwitch* ASPPlayerCharacter::FindGravitySwitchInView() const
 {
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
-    const USPCharacterMovementComponent* Movement =
-        Cast<USPCharacterMovementComponent>(GetCharacterMovement());
-
-    if (!Movement)
+    if (!Controller || !FirstPersonCamera || !GetWorld())
     {
-        SP_DEBUG_LOG(
-            Error,
-            TEXT("%s: Debug gravity change failed: missing SP movement component."),
-            *GetName());
-
-        return;
+        return nullptr;
     }
 
-    const ESPGravityMode TargetMode = Movement->IsZeroGravity()
-        ? ESPGravityMode::Gravity
-        : ESPGravityMode::ZeroGravity;
+    FVector ViewLocation;
+    FRotator ViewRotation;
+    if (IsLocallyControlled())
+    {
+        Controller->GetPlayerViewPoint(ViewLocation, ViewRotation);
+    }
+    else
+    {
+        // 원격 플레이어에는 서버의 로컬 화면 카메라를 사용하지 않는다.
+        ViewLocation = FirstPersonCamera->GetComponentLocation();
+        ViewRotation = GetBaseAimRotation();
+    }
 
-    ServerSetDebugGravityMode(TargetMode);
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SPGravitySwitchTrace), false, this);
+    if (IsValid(HeldCargo))
+    {
+        Params.AddIgnoredActor(HeldCargo.Get());
+    }
+    const FVector End = ViewLocation
+        + ViewRotation.Vector() * FMath::Max(GravitySwitchUseDistance, 1.0f);
+    FHitResult Hit;
+    if (GetWorld()->LineTraceSingleByChannel(Hit, ViewLocation, End, ECC_Visibility, Params))
+    {
+        return Cast<ASPGravitySwitch>(Hit.GetActor());
+    }
 #endif
+    return nullptr;
 }
 
-// [TEMP-GRAVITY-TOGGLE] 패키징 설정과 무관하게 Shipping/Test에서는 서버 측 변경도 실행하지 않는다.
-void ASPPlayerCharacter::ServerSetDebugGravityMode_Implementation(
-    ESPGravityMode NewMode)
+// 작업자: 김세훈 | [TEMP-GRAVITY-SWITCH] 클라이언트의 대상 포인터를 서버 시선 검사로 검증한다.
+void ASPPlayerCharacter::ServerUseGravitySwitch_Implementation(ASPGravitySwitch* TargetSwitch)
 {
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
-    USPCharacterMovementComponent* Movement =
-        Cast<USPCharacterMovementComponent>(GetCharacterMovement());
-
-    if (!Movement)
+    if (!IsValid(TargetSwitch) || FindGravitySwitchInView() != TargetSwitch)
     {
-        SP_DEBUG_LOG(
-            Error,
-            TEXT("%s: Server gravity change failed: missing SP movement component."),
-            *GetName());
-
+        // 지연 중 대상/시선이 바뀌는 정상 상황은 로그를 남기지 않는다.
         return;
     }
-
-    Movement->SetGravityMode(NewMode);
+    TargetSwitch->TryActivate();
 #endif
 }

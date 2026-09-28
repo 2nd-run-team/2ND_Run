@@ -1,10 +1,10 @@
-# 2ND_Run
+# SpacePirate
 
 ![Unreal Engine](https://img.shields.io/badge/Unreal%20Engine-5.8.2-0E1128?logo=unrealengine)
 ![Language](https://img.shields.io/badge/C%2B%2B-project-00599C?logo=cplusplus)
 
-Unreal Engine **5.8.2** C++ 프로젝트. 실행 파일은 `SecondRun.uproject`
-입니다. (UE 프로젝트명은 숫자로 시작할 수 없어 저장소명과 다릅니다.)
+Unreal Engine **5.8.2** C++ 프로젝트. 실행 파일은 `SpacePirate.uproject`
+입니다. 프로젝트와 C++ 모듈 이름은 `SpacePirate`이며 저장소 이름은 `2ND_Run`입니다.
 
 ## 요구 사항
 
@@ -58,8 +58,8 @@ C++ 프로젝트라 clone 직후에는 컴파일이 필요합니다. `.uproject`
 에디터가 아예 열리지 않습니다.
 
 ```
-1. SecondRun.uproject 우클릭 → Generate Visual Studio project files
-2. 생성된 SecondRun.sln 을 Visual Studio 2022 로 열기
+1. SpacePirate.uproject 우클릭 → Generate Visual Studio project files
+2. 생성된 SpacePirate.sln 을 Visual Studio 2022 로 열기
 3. 솔루션 구성을 Development Editor / Win64 로 맞추고 빌드 (Ctrl+Shift+B)
 ```
 

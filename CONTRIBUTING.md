@@ -16,12 +16,26 @@ git config lfs.locksverify true        # 락 검증 활성화
 clone 후 **빌드**까지 해야 에디터가 열립니다 (C++ 프로젝트):
 
 ```
-SecondRun.uproject 우클릭 → Generate Visual Studio project files
-→ SecondRun.sln 열기 → Development Editor / Win64 → 빌드
+SpacePirate.uproject 우클릭 → Generate Visual Studio project files
+→ SpacePirate.sln 열기 → Development Editor / Win64 → 빌드
 ```
 
 Visual Studio 2022 의 `C++를 사용한 게임 개발` 워크로드가 없으면 여기서
 막힙니다. 자세한 절차는 [README.md](README.md#시작하기) 참고.
+
+### SpacePirate 이름 변경 후 기존 작업 환경 갱신
+
+1. 언리얼 에디터와 기존 SecondRun 솔루션을 닫고 변경 사항을 받습니다.
+2. `SpacePirate.uproject`에서 프로젝트 파일을 재생성합니다.
+3. 새 `SpacePirate.sln` 또는 `SpacePirate.slnx`를 열고 `Development Editor / Win64`로 빌드합니다.
+4. `SpacePirate.uproject`를 열어 작업하던 블루프린트와 맵을 확인합니다.
+
+모듈은 `SpacePirate`, API 매크로는 `SPACEPIRATE_API`입니다. 이전 브랜치의 코드를
+병합할 때 `Source/SecondRun` 대신 `Source/SpacePirate`에 반영하고 이전 API 매크로와
+템플릿 클래스 참조도 갱신합니다. `Config/DefaultEngine.ini`의 Core Redirects는
+기존 에셋의 모듈 및 클래스 참조를 연결하므로 함께 받고 유지해야 합니다.
+기존 SecondRun 솔루션 및 바로가기는 사용하지 않습니다. 저장소 URL과 로컬 최상위
+폴더 이름은 이번 변경 대상이 아닙니다.
 
 ## 0.5. 엔진 버전 — 5.8.2 고정
 

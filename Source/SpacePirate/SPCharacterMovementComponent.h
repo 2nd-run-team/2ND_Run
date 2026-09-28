@@ -103,6 +103,16 @@ public:
         meta = (ClampMin = "0.0", ClampMax = "1.0"))
     float SprintForwardDotThreshold = 0.5f;
 
+    /** Small 등급 기본 배율. 가진 화물 하나마다 중력 상태 최대 속도(걷기·달리기·낙하)에 누적해 곱한다. 화물에서 개별 배율을 켜면 그 값이 우선한다. 무중력에는 적용하지 않는다. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Cargo",
+        meta = (ClampMin = "0.1", ClampMax = "1.0"))
+    float SmallCargoSpeedMultiplier = 0.9f;
+
+    /** Mid 등급 기본 배율. 화물에서 개별 배율을 켜면 그 값이 우선한다. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Cargo",
+        meta = (ClampMin = "0.1", ClampMax = "1.0"))
+    float MidCargoSpeedMultiplier = 0.7f;
+
     /** 최대 추진 가속도(cm/s²). 대각선/3축 입력을 함께 눌러도 이 크기를 넘지 않는다. */
     UPROPERTY(
         EditAnywhere,
@@ -219,6 +229,9 @@ private:
     void MoveWithCollision(float DeltaTime);
 
     bool HasForwardAcceleration() const;
+
+    float GetGravityMaxSpeed() const;
+    float GetCargoSpeedMultiplier() const;
 
     FRotator GetSimulationViewRotation() const;
 

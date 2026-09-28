@@ -4,9 +4,9 @@
 #include "SPGravitySwitch.h"
 #include "SPCharacterMovementComponent.h"
 #include "SPDebug.h"
+#include "SPInventoryComponent.h"
 
 #include "Engine/World.h"
-#include "Net/UnrealNetwork.h"
 
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
@@ -61,7 +61,14 @@ ASPPlayerCharacter::ASPPlayerCharacter(
         CreateDefaultSubobject<USceneComponent>(
             TEXT("CargoHoldPoint"));
 
-    CargoHoldPoint->SetupAttachment(GetMesh(), TEXT("hand_r"));
+    // 생성자에서는 C++ 기본 소켓으로 붙이고, BP에서 바꾼 소켓은 OnConstruction에서 다시 붙인다.
+    CargoHoldPoint->SetupAttachment(GetMesh(), CargoHoldSocketName);
+
+    Inventory =
+        CreateDefaultSubobject<USPInventoryComponent>(
+            TEXT("Inventory"));
+
+    Inventory->SetHoldPoint(CargoHoldPoint);
 
     JumpMaxCount = 1;
     JumpMaxHoldTime = 0.0f;
@@ -151,6 +158,7 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
         this,
         &ASPPlayerCharacter::StopSprint);
 
+    // 인벤토리 입력은 선택 사항이다. 비어 있는 액션의 기능만 꺼지고 이동 입력은 그대로 동작한다.
     if (InteractAction)
     {
         Input->BindAction(
@@ -159,10 +167,40 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
             this,
             &ASPPlayerCharacter::Interact);
     }
-    else
+
+    if (DropAction)
     {
-        SP_DEBUG_LOG(Warning, TEXT("%s: Interact disabled: InteractAction is not assigned in the player Blueprint Class Defaults."),
-            *GetName());
+        Input->BindAction(
+            DropAction,
+            ETriggerEvent::Started,
+            this,
+            &ASPPlayerCharacter::DropActiveCargo);
+    }
+
+    if (SelectSlotAction)
+    {
+        Input->BindAction(
+            SelectSlotAction,
+            ETriggerEvent::Started,
+            this,
+            &ASPPlayerCharacter::SelectSlot);
+    }
+
+    // 휠은 한 프레임짜리 입력이라, 연속으로 굴려도 매번 들어오도록 Triggered로 받는다.
+    if (CycleSlotAction)
+    {
+        Input->BindAction(
+            CycleSlotAction,
+            ETriggerEvent::Triggered,
+            this,
+            &ASPPlayerCharacter::CycleSlot);
+    }
+
+    if (!InteractAction || !DropAction || !SelectSlotAction || !CycleSlotAction)
+    {
+        SP_DEBUG_LOG(Warning, TEXT("%s: Inventory input partly disabled: Interact=%s, Drop=%s, SelectSlot=%s, CycleSlot=%s. Assign them in the player Blueprint Class Defaults."),
+            *GetName(), *GetNameSafe(InteractAction.Get()), *GetNameSafe(DropAction.Get()),
+            *GetNameSafe(SelectSlotAction.Get()), *GetNameSafe(CycleSlotAction.Get()));
     }
 
 }
@@ -302,17 +340,39 @@ void ASPPlayerCharacter::UpdateSprintRequest()
     Movement->SetSprintRequested(bRequested);
 }
 
-void ASPPlayerCharacter::GetLifetimeReplicatedProps(
-    TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ASPPlayerCharacter::OnConstruction(const FTransform& Transform)
 {
-    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    Super::OnConstruction(Transform);
 
-    DOREPLIFETIME(ASPPlayerCharacter, HeldCargo);
+    // 생성자 시점에는 BP에서 바꾼 CargoHoldSocketName이 아직 적용되지 않는다.
+    if (CargoHoldPoint->GetAttachSocketName() != CargoHoldSocketName)
+    {
+        CargoHoldPoint->AttachToComponent(
+            GetMesh(),
+            FAttachmentTransformRules::KeepRelativeTransform,
+            CargoHoldSocketName);
+    }
+
+    // 에디터 편집 중 반복 호출되므로 게임 월드에서만 알린다.
+    // 소켓이 없으면 화물이 메시 원점(발밑)에 붙는다.
+    if (GetWorld() && GetWorld()->IsGameWorld()
+        && GetMesh()->GetSkeletalMeshAsset()
+        && !GetMesh()->DoesSocketExist(CargoHoldSocketName))
+    {
+        SP_DEBUG_LOG(Warning, TEXT("%s: CargoHoldSocketName '%s' not found on mesh %s. Check the socket/bone name in the player Blueprint Class Defaults."),
+            *GetName(), *CargoHoldSocketName.ToString(),
+            *GetNameSafe(GetMesh()->GetSkeletalMeshAsset()));
+    }
 }
 
 bool ASPPlayerCharacter::IsCarryingCargo() const
 {
-    return IsValid(HeldCargo);
+    return Inventory->GetActiveCargo() != nullptr;
+}
+
+USPInventoryComponent* ASPPlayerCharacter::GetInventory() const
+{
+    return Inventory;
 }
 
 // 작업자: 김세훈 | 임시 버튼을 우선 사용하고 기존 화물 상호작용으로 이어간다.
@@ -325,14 +385,36 @@ void ASPPlayerCharacter::Interact()
         return;
     }
 #endif
+
+    // 클라이언트에서 미리 걸러 불필요한 RPC를 줄인다. 최종 판정은 서버가 같은 규칙으로 다시 한다.
+    ASPCargo* Cargo = FindCargoInView();
+    if (Cargo && Inventory->CanPickUp(Cargo))
+    {
+        Inventory->ServerPickUp(Cargo);
+    }
+}
+
+void ASPPlayerCharacter::DropActiveCargo()
+{
     if (IsCarryingCargo())
     {
-        return;
+        Inventory->ServerDrop();
     }
+}
 
-    if (ASPCargo* Cargo = FindCargoInView())
+void ASPPlayerCharacter::SelectSlot(const FInputActionValue& Value)
+{
+    // 숫자키마다 Scalar 모디파이어로 1, 2, 3을 넣어 한 액션으로 받는다.
+    Inventory->ServerSelectSlot(
+        FMath::RoundToInt(Value.Get<float>()) - 1);
+}
+
+void ASPPlayerCharacter::CycleSlot(const FInputActionValue& Value)
+{
+    const float Axis = Value.Get<float>();
+    if (!FMath::IsNearlyZero(Axis))
     {
-        ServerRequestPickup(Cargo);
+        Inventory->ServerCycleSlot(Axis > 0.0f ? 1 : -1);
     }
 }
 
@@ -360,39 +442,11 @@ ASPCargo* ASPPlayerCharacter::FindCargoInView() const
         ViewLocation,
         TraceEnd,
         FQuat::Identity,
-        ECC_Visibility,
+        CargoTraceChannel,
         FCollisionShape::MakeSphere(CargoTraceRadius),
         Params);
 
     return bHit ? Cast<ASPCargo>(Hit.GetActor()) : nullptr;
-}
-
-void ASPPlayerCharacter::ServerRequestPickup_Implementation(
-    ASPCargo* TargetCargo)
-{
-    // 동시에 같은 화물을 요청한 경우의 패배나 연타는 정상 흐름이라 기록하지 않는다.
-    if (IsCarryingCargo() || !IsValid(TargetCargo)
-        || TargetCargo->IsCarried())
-    {
-        return;
-    }
-
-    if (GetDistanceTo(TargetCargo) > CargoServerPickupRange)
-    {
-        SP_DEBUG_LOG(Warning, TEXT("%s: Pickup rejected: %s is %.0f away (limit %.0f). Raise CargoServerPickupRange if this happens under normal latency."),
-            *GetName(), *TargetCargo->GetName(),
-            GetDistanceTo(TargetCargo), CargoServerPickupRange);
-        return;
-    }
-
-    if (!TargetCargo->AttachToCarrier(this, CargoHoldPoint))
-    {
-        SP_DEBUG_LOG(Error, TEXT("%s: Pickup failed: could not attach %s to CargoHoldPoint. Check that the cargo root is not simulating physics."),
-            *GetName(), *TargetCargo->GetName());
-        return;
-    }
-
-    HeldCargo = TargetCargo;
 }
 
 void ASPPlayerCharacter::RefreshZeroGravityInput()
@@ -538,9 +592,9 @@ ASPGravitySwitch* ASPPlayerCharacter::FindGravitySwitchInView() const
     }
 
     FCollisionQueryParams Params(SCENE_QUERY_STAT(SPGravitySwitchTrace), false, this);
-    if (IsValid(HeldCargo))
+    if (ASPCargo* ActiveCargo = Inventory->GetActiveCargo())
     {
-        Params.AddIgnoredActor(HeldCargo.Get());
+        Params.AddIgnoredActor(ActiveCargo);
     }
     const FVector End = ViewLocation
         + ViewRotation.Vector() * FMath::Max(GravitySwitchUseDistance, 1.0f);

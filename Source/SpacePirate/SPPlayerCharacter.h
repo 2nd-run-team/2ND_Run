@@ -15,6 +15,7 @@ class ASPGravitySwitch;
 class UCameraComponent;
 class UInputAction;
 class USceneComponent;
+class USPInventoryComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -37,16 +38,17 @@ public:
 
     virtual void PawnClientRestart() override;
 
-    virtual void GetLifetimeReplicatedProps(
-        TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-    /** 애님 BP의 운반 포즈 전환용. HeldCargo가 복제되므로 다른 플레이어 화면에서도 맞다. */
+    /** 애님 BP의 운반 포즈 전환용. 현재 칸에 화물이 있으면 true. 인벤토리가 복제되므로 다른 플레이어 화면에서도 맞다. */
     UFUNCTION(BlueprintPure, Category = "Cargo")
     bool IsCarryingCargo() const;
+
+    USPInventoryComponent* GetInventory() const;
 
 protected:
     virtual void SetupPlayerInputComponent(
         UInputComponent* PlayerInputComponent) override;
+
+    virtual void OnConstruction(const FTransform& Transform) override;
 
     /** 캡슐에 부착된 1인칭 카메라. 위치/FOV는 BP 컴포넌트 Details에서 조절한다. */
     UPROPERTY(
@@ -65,6 +67,13 @@ protected:
         Category = "Components")
     TObjectPtr<USceneComponent> CargoHoldPoint;
 
+    /** 3칸 인벤토리. 서버 거리 검사와 버리기 여유 거리는 이 컴포넌트 Details에서 조절한다. */
+    UPROPERTY(
+        VisibleAnywhere,
+        BlueprintReadOnly,
+        Category = "Components")
+    TObjectPtr<USPInventoryComponent> Inventory;
+
     /** Axis2D: X=좌우, Y=전후. 키 배치는 기존 Input Mapping Context에서 설정한다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputAction> MoveAction;
@@ -78,9 +87,22 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputAction> SprintAction; // Shift: 중력에서는 달리기, 무중력에서는 몸 아래쪽 추진.
 
-    /** 비어 있으면 상호작용만 비활성화되고 다른 입력은 그대로 동작한다. */
+    // 인벤토리 입력. 비어 있으면 그 기능만 비활성화되고 다른 입력은 그대로 동작한다.
+    /** E: 화면 중앙의 화물을 집는다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputAction> InteractAction;
+
+    /** G: 현재 칸의 화물을 버린다. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    TObjectPtr<UInputAction> DropAction;
+
+    /** Axis1D: 숫자키 1/2/3에 Scalar 모디파이어로 1, 2, 3을 넣는다. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    TObjectPtr<UInputAction> SelectSlotAction;
+
+    /** Axis1D: 마우스 휠. 양수면 다음 칸, 음수면 이전 칸. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    TObjectPtr<UInputAction> CycleSlotAction;
 
     /** 화면 중앙에서 화물을 찾는 구체 트레이스 길이. */
     UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
@@ -89,9 +111,13 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
     float CargoTraceRadius = 20.0f;
 
-    /** 서버가 허용하는 캐릭터-화물 최대 거리. 지연과 액터 원점 차이를 감안해 트레이스 길이보다 크게 둔다. */
-    UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
-    float CargoServerPickupRange = 400.0f;
+    /** 화물을 찾는 트레이스 채널. 화물 메시가 이 채널을 Block해야 집을 수 있다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Cargo", AdvancedDisplay)
+    TEnumAsByte<ECollisionChannel> CargoTraceChannel = ECC_Visibility;
+
+    /** CargoHoldPoint가 붙을 메시 소켓(또는 본) 이름. 바꾸면 BP 뷰포트 미리보기에도 반영된다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Cargo")
+    FName CargoHoldSocketName = TEXT("hand_r");
 
     /** 임시 중력 버튼 검색 거리(cm). 서버도 같은 거리와 가림 상태를 재검사한다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gravity|Interaction", meta = (ClampMin = "1.0"))
@@ -123,15 +149,12 @@ private:
 
     void UpdateSprintRequest();
 
-    // 클라이언트는 화면 기준으로 대상만 고르고, 판정과 부착은 서버가 한다.
+    // 클라이언트는 화면 기준으로 대상만 고르고, 판정과 부착은 인벤토리 컴포넌트가 서버에서 한다.
     void Interact();
+    void DropActiveCargo();
+    void SelectSlot(const FInputActionValue& Value);
+    void CycleSlot(const FInputActionValue& Value);
     ASPCargo* FindCargoInView() const;
-
-    UFUNCTION(Server, Reliable)
-    void ServerRequestPickup(ASPCargo* TargetCargo);
-
-    UPROPERTY(Replicated)
-    TObjectPtr<ASPCargo> HeldCargo;
 
     // 키를 누른 상태를 유지해 중력 전환 후에도 같은 입력을 새 모드에서 해석한다.
     FVector2D MoveInput = FVector2D::ZeroVector;

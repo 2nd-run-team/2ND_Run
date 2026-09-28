@@ -1,6 +1,9 @@
 #include "SPCharacterMovementComponent.h"
+#include "SPCargo.h"
 #include "SPDebug.h"
 #include "SPGravityWorldSubsystem.h"
+#include "SPInventoryComponent.h"
+#include "SPPlayerCharacter.h"
 #include "Engine/ScopedMovementUpdate.h"
 
 #include "Components/CapsuleComponent.h"
@@ -357,6 +360,61 @@ float USPCharacterMovementComponent::GetMaxSpeed() const
         return FMath::Max(ZeroGravityMaxSpeed, 1.0f);
     }
 
+    return GetGravityMaxSpeed() * GetCargoSpeedMultiplier();
+}
+
+float USPCharacterMovementComponent::GetCargoSpeedMultiplier() const
+{
+    const ASPPlayerCharacter* SPOwner =
+        Cast<ASPPlayerCharacter>(CharacterOwner);
+
+    const USPInventoryComponent* Inventory =
+        SPOwner ? SPOwner->GetInventory() : nullptr;
+
+    if (!Inventory)
+    {
+        return 1.0f;
+    }
+
+    // 손에 든 것뿐 아니라 보관 중인 화물까지 모두의 배율을 누적해 곱한다.
+    // ponytail: 인벤토리는 서버에서 복제되므로 집기/버리기 직후 한 번 짧은 위치 보정이 생길 수 있다.
+    // 거슬리면 누적 배율을 이동 기록(SavedMove/NetworkMoveData)에 넣어 예측에 포함시킨다.
+    float Multiplier = 1.0f;
+
+    for (const ASPCargo* Cargo : Inventory->GetSlots())
+    {
+        if (!IsValid(Cargo))
+        {
+            continue;
+        }
+
+        // 화물에 개별 배율이 켜져 있으면 무게 등급 기본값보다 우선한다.
+        if (const TOptional<float> Override = Cargo->GetCarrySpeedOverride();
+            Override.IsSet())
+        {
+            Multiplier *= FMath::Clamp(Override.GetValue(), 0.1f, 1.0f);
+            continue;
+        }
+
+        switch (Cargo->GetWeight())
+        {
+        case ESPCargoWeight::Small:
+            Multiplier *= FMath::Clamp(SmallCargoSpeedMultiplier, 0.1f, 1.0f);
+            break;
+        case ESPCargoWeight::Mid:
+            Multiplier *= FMath::Clamp(MidCargoSpeedMultiplier, 0.1f, 1.0f);
+            break;
+        case ESPCargoWeight::Large:
+            // Large는 별도 동작으로 구현할 예정이라 아직 속도에 관여하지 않는다(현재는 집을 수도 없다).
+            break;
+        }
+    }
+
+    return Multiplier;
+}
+
+float USPCharacterMovementComponent::GetGravityMaxSpeed() const
+{
     const float EffectiveSprintSpeed =
         FMath::Max(MaxWalkSpeed, SprintSpeed);
 

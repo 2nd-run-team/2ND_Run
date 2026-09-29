@@ -13,6 +13,8 @@
 #include "SPMovementNetwork.h"
 #include "SPCharacterMovementComponent.generated.h"
 
+class ASPCargo;
+
 UCLASS()
 class SPACEPIRATE_API USPCharacterMovementComponent
     : public UCharacterMovementComponent
@@ -113,6 +115,11 @@ public:
         meta = (ClampMin = "0.1", ClampMax = "1.0"))
     float MidCargoSpeedMultiplier = 0.7f;
 
+    /** Large를 잡고 있는 동안의 기본 배율. 들렸는지와 상관없이 잡은 동안 적용한다. 화물에서 개별 배율을 켜면 그 값이 우선한다. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Cargo",
+        meta = (ClampMin = "0.1", ClampMax = "1.0"))
+    float LargeCargoSpeedMultiplier = 0.5f;
+
     /** 최대 추진 가속도(cm/s²). 대각선/3축 입력을 함께 눌러도 이 크기를 넘지 않는다. */
     UPROPERTY(
         EditAnywhere,
@@ -198,6 +205,12 @@ protected:
 
     virtual void UpdateFromCompressedFlags(uint8 Flags) override;
 
+    /** 이동을 마친 뒤 Large 잡는 지점의 줄을 적용한다. 클라이언트 예측·재생과 서버가 같은 경로로 실행한다. */
+    virtual void OnMovementUpdated(
+        float DeltaSeconds,
+        const FVector& OldLocation,
+        const FVector& OldVelocity) override;
+
     virtual void PhysCustom(
         float DeltaTime,
         int32 Iterations) override;
@@ -232,6 +245,9 @@ private:
 
     float GetGravityMaxSpeed() const;
     float GetCargoSpeedMultiplier() const;
+    float GetCarrySpeedMultiplier(const ASPCargo* Cargo) const;
+
+    void ApplyLargeGripLeash();
 
     FRotator GetSimulationViewRotation() const;
 

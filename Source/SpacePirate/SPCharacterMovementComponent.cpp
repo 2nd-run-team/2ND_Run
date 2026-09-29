@@ -383,34 +383,92 @@ float USPCharacterMovementComponent::GetCargoSpeedMultiplier() const
 
     for (const ASPCargo* Cargo : Inventory->GetSlots())
     {
-        if (!IsValid(Cargo))
-        {
-            continue;
-        }
-
-        // 화물에 개별 배율이 켜져 있으면 무게 등급 기본값보다 우선한다.
-        if (const TOptional<float> Override = Cargo->GetCarrySpeedOverride();
-            Override.IsSet())
-        {
-            Multiplier *= FMath::Clamp(Override.GetValue(), 0.1f, 1.0f);
-            continue;
-        }
-
-        switch (Cargo->GetWeight())
-        {
-        case ESPCargoWeight::Small:
-            Multiplier *= FMath::Clamp(SmallCargoSpeedMultiplier, 0.1f, 1.0f);
-            break;
-        case ESPCargoWeight::Mid:
-            Multiplier *= FMath::Clamp(MidCargoSpeedMultiplier, 0.1f, 1.0f);
-            break;
-        case ESPCargoWeight::Large:
-            // Large는 별도 동작으로 구현할 예정이라 아직 속도에 관여하지 않는다(현재는 집을 수도 없다).
-            break;
-        }
+        Multiplier *= GetCarrySpeedMultiplier(Cargo);
     }
 
-    return Multiplier;
+    // Large는 칸 밖에서 따로 잡는다.
+    return Multiplier * GetCarrySpeedMultiplier(Inventory->GetGrippedLarge());
+}
+
+float USPCharacterMovementComponent::GetCarrySpeedMultiplier(const ASPCargo* Cargo) const
+{
+    if (!IsValid(Cargo))
+    {
+        return 1.0f;
+    }
+
+    // 화물에 개별 배율이 켜져 있으면 무게 등급 기본값보다 우선한다.
+    if (const TOptional<float> Override = Cargo->GetCarrySpeedOverride();
+        Override.IsSet())
+    {
+        return FMath::Clamp(Override.GetValue(), 0.1f, 1.0f);
+    }
+
+    switch (Cargo->GetWeight())
+    {
+    case ESPCargoWeight::Small:
+        return FMath::Clamp(SmallCargoSpeedMultiplier, 0.1f, 1.0f);
+    case ESPCargoWeight::Mid:
+        return FMath::Clamp(MidCargoSpeedMultiplier, 0.1f, 1.0f);
+    case ESPCargoWeight::Large:
+        return FMath::Clamp(LargeCargoSpeedMultiplier, 0.1f, 1.0f);
+    }
+
+    return 1.0f;
+}
+
+void USPCharacterMovementComponent::OnMovementUpdated(
+    float DeltaSeconds,
+    const FVector& OldLocation,
+    const FVector& OldVelocity)
+{
+    Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
+
+    ApplyLargeGripLeash();
+}
+
+void USPCharacterMovementComponent::ApplyLargeGripLeash()
+{
+    const ASPPlayerCharacter* SPOwner =
+        Cast<ASPPlayerCharacter>(CharacterOwner);
+
+    const USPInventoryComponent* Inventory =
+        SPOwner ? SPOwner->GetInventory() : nullptr;
+
+    const ASPCargo* Large =
+        Inventory ? Inventory->GetGrippedLarge() : nullptr;
+
+    FVector GripLocation;
+    if (!Large || !Large->GetGripLocationFor(CharacterOwner, GripLocation))
+    {
+        return;
+    }
+
+    // 중력에서는 수평 거리만 본다. 점프나 높이 차이로 끌려 내려오지 않게 한다.
+    FVector Offset = UpdatedComponent->GetComponentLocation() - GripLocation;
+    if (!IsZeroGravity())
+    {
+        Offset.Z = 0.0;
+    }
+
+    const double Range = Large->GetLeashLength();
+    if (Offset.SizeSquared() <= FMath::Square(Range))
+    {
+        return;
+    }
+
+    // ponytail: 클라이언트가 보는 화물 위치는 서버보다 조금 늦어, 줄 끝에 닿을 때 작은 위치 보정이 생길 수 있다.
+    // 거슬리면 줄 판정에 쓰는 화물 위치를 이동 기록에 넣는다.
+    // 줄 밖으로 나간 만큼 되돌리고, 바깥쪽으로 향하는 속도를 없앤다. 무중력에서는 관성 때문에 속도도 지워야 멈춘다.
+    const FVector Outward = Offset.GetSafeNormal();
+    FHitResult Hit;
+    SafeMoveUpdatedComponent(
+        -Outward * (Offset.Size() - Range),
+        UpdatedComponent->GetComponentQuat(),
+        true,
+        Hit);
+
+    Velocity -= Outward * FMath::Max(FVector::DotProduct(Velocity, Outward), 0.0);
 }
 
 float USPCharacterMovementComponent::GetGravityMaxSpeed() const

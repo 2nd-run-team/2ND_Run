@@ -30,6 +30,23 @@ void USPInventoryComponent::GetLifetimeReplicatedProps(
     // 다른 플레이어 화면의 운반 포즈와 이동속도 계산도 슬롯을 보므로 모두에게 복제한다.
     DOREPLIFETIME(USPInventoryComponent, Slots);
     DOREPLIFETIME(USPInventoryComponent, ActiveSlot);
+    DOREPLIFETIME(USPInventoryComponent, GrippedLarge);
+}
+
+ASPCargo* USPInventoryComponent::GetGrippedLarge() const
+{
+    return IsValid(GrippedLarge) ? GrippedLarge.Get() : nullptr;
+}
+
+void USPInventoryComponent::OnLargeReleased(const ASPCargo* Cargo)
+{
+    if (GrippedLarge.Get() == Cargo)
+    {
+        GrippedLarge = nullptr;
+
+        // 서버에서는 RepNotify가 자동 호출되지 않는다.
+        OnRep_Inventory();
+    }
 }
 
 ASPCargo* USPInventoryComponent::GetActiveCargo() const
@@ -59,10 +76,18 @@ int32 USPInventoryComponent::FindSlotForPickUp() const
 
 bool USPInventoryComponent::CanPickUp(const ASPCargo* Cargo) const
 {
-    // Large는 별도 동작을 구현하기 전까지 집을 수 없다.
-    return IsValid(Cargo)
-        && !Cargo->IsCarried()
-        && Cargo->GetWeight() != ESPCargoWeight::Large
+    if (!IsValid(Cargo) || IsGrippingLarge())
+    {
+        return false;
+    }
+
+    // Large는 칸에 넣지 않고 잡는 지점을 맡는다. 양손이 필요하므로 현재 칸이 비어 있어야 한다.
+    if (Cargo->GetWeight() == ESPCargoWeight::Large)
+    {
+        return !GetActiveCargo() && Cargo->CanAddLargeCarrier(GetOwner<APawn>());
+    }
+
+    return !Cargo->IsCarried()
         && !IsHoldingTwoHanded()
         && FindSlotForPickUp() != INDEX_NONE;
 }
@@ -74,6 +99,17 @@ void USPInventoryComponent::ServerPickUp_Implementation(ASPCargo* Cargo)
     // 동시 요청의 패배, 가득 참, 양손 제한은 정상 흐름이라 기록하지 않는다.
     if (!OwnerPawn || !CanPickUp(Cargo))
     {
+        return;
+    }
+
+    // Large는 CanPickUp에서 잡는 지점까지의 거리를 이미 확인했다.
+    if (Cargo->GetWeight() == ESPCargoWeight::Large)
+    {
+        if (Cargo->AddLargeCarrier(OwnerPawn))
+        {
+            GrippedLarge = Cargo;
+            OnRep_Inventory();
+        }
         return;
     }
 
@@ -100,6 +136,13 @@ void USPInventoryComponent::ServerPickUp_Implementation(ASPCargo* Cargo)
 
 void USPInventoryComponent::ServerDrop_Implementation()
 {
+    // 들려 있던 Large는 인원이 모자라게 되면 그 자리에서 떨어진다. 잡기 상태는 OnLargeReleased에서 풀린다.
+    if (ASPCargo* Large = GetGrippedLarge())
+    {
+        Large->RemoveLargeCarrier(GetOwner<APawn>());
+        return;
+    }
+
     ASPCargo* Cargo = GetActiveCargo();
     FVector DropLocation;
 
@@ -118,10 +161,11 @@ void USPInventoryComponent::ServerDrop_Implementation()
 
 void USPInventoryComponent::ServerSelectSlot_Implementation(int32 SlotIndex)
 {
-    // 양손 화물을 든 동안에는 전환할 수 없다. 버려야 풀린다.
+    // 양손 화물을 들거나 Large를 잡은 동안에는 전환할 수 없다. 버려야 풀린다.
     if (!Slots.IsValidIndex(SlotIndex)
         || SlotIndex == ActiveSlot
-        || IsHoldingTwoHanded())
+        || IsHoldingTwoHanded()
+        || IsGrippingLarge())
     {
         return;
     }
@@ -219,6 +263,11 @@ void USPInventoryComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void USPInventoryComponent::DropAll()
 {
+    if (ASPCargo* Large = GetGrippedLarge())
+    {
+        Large->RemoveLargeCarrier(GetOwner<APawn>());
+    }
+
     for (TObjectPtr<ASPCargo>& Cargo : Slots)
     {
         if (IsValid(Cargo))
@@ -253,6 +302,11 @@ void USPInventoryComponent::OnRep_Inventory()
             Index == ActiveSlot ? TEXT(">") : TEXT(""),
             Index + 1,
             *ItemName);
+    }
+
+    if (IsGrippingLarge())
+    {
+        Text += TEXT("[Gripping Large]");
     }
 
     GEngine->AddOnScreenDebugMessage(

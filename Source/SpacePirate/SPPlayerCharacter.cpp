@@ -396,7 +396,7 @@ void ASPPlayerCharacter::Interact()
 
 void ASPPlayerCharacter::DropActiveCargo()
 {
-    if (IsCarryingCargo())
+    if (IsCarryingCargo() || Inventory->IsGrippingLarge())
     {
         Inventory->ServerDrop();
     }

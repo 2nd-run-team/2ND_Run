@@ -45,5 +45,5 @@ ASPGravityZone* USPGravityWorldSubsystem::FindZoneAtLocation(const FVector& Worl
 ESPGravityMode USPGravityWorldSubsystem::GetGravityModeAtLocation(const FVector& WorldLocation) const
 {
     const ASPGravityZone* Zone = FindZoneAtLocation(WorldLocation);
-    return Zone ? Zone->GetGravityMode() : ESPGravityMode::ZeroGravity;
+    return Zone ? Zone->GetGravityMode() : ESPGravityMode::Gravity;
 }

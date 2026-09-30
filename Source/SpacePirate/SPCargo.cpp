@@ -373,7 +373,7 @@ int32 ASPCargo::CountCarriers() const
 
 bool ASPCargo::IsInZeroGravity() const
 {
-	// 운반자들이 서로 다른 영역에 걸쳐 있어도 화물 위치 하나로 판정한다. 영역은 서버에만 등록되고, 영역 밖은 무중력이다.
+	// 운반자들이 서로 다른 영역에 걸쳐 있어도 화물 위치 하나로 판정한다. 영역은 서버에만 등록되고, 영역 밖은 기본 중력이다.
 	const USPGravityWorldSubsystem* Gravity = GetWorld()->GetSubsystem<USPGravityWorldSubsystem>();
 	return !Gravity
 		|| Gravity->GetGravityModeAtLocation(GetActorLocation()) == ESPGravityMode::ZeroGravity;

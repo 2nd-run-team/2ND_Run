@@ -62,8 +62,8 @@ bool FSPGravityZonesTest::RunTest(const FString& Parameters)
     UWorld* World = TestWorld.World;
     USPGravityWorldSubsystem* Registry = World->GetSubsystem<USPGravityWorldSubsystem>();
     if (!TestNotNull(TEXT("Game world subsystem"), Registry)) { return false; }
-    TestTrue(TEXT("Outside defaults to zero gravity"),
-        Registry->GetGravityModeAtLocation(FVector::ZeroVector) == ESPGravityMode::ZeroGravity);
+    TestTrue(TEXT("Outside defaults to gravity"),
+        Registry->GetGravityModeAtLocation(FVector::ZeroVector) == ESPGravityMode::Gravity);
     ASPGravityZone* Zone = World->SpawnActor<ASPGravityZone>();
     Zone->SetActorTransform(FTransform(FRotator(0, 37, 0), FVector(1000, 500, 0), FVector(2, 1, 1)));
     const FVector Inside = Zone->GetActorTransform().TransformPosition(FVector(490, 490, 0));
@@ -88,7 +88,7 @@ bool FSPGravityZonesTest::RunTest(const FString& Parameters)
     Override->Destroy();
     TestTrue(TEXT("Destroyed override falls back"), Registry->FindZoneAtLocation(Inside) == Zone);
     Zone->Destroy();
-    TestTrue(TEXT("Last zone removed returns zero gravity"), Registry->GetGravityModeAtLocation(Inside) == ESPGravityMode::ZeroGravity);
+    TestTrue(TEXT("Last zone removed returns gravity"), Registry->GetGravityModeAtLocation(Inside) == ESPGravityMode::Gravity);
     return true;
 }
 

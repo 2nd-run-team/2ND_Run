@@ -19,7 +19,7 @@ public:
     void UnregisterZone(ASPGravityZone* Zone);
     /** 작업자: 김세훈 | 위치를 포함하는 최고 우선순위 영역을 찾는다. */
     ASPGravityZone* FindZoneAtLocation(const FVector& WorldLocation) const;
-    /** 작업자: 김세훈 | 영역이 없으면 기본 무중력을 반환한다. 서버에서 사용한다. */
+    /** 작업자: 김세훈 | 영역이 없으면 기본 중력을 반환한다. 서버에서 사용한다. */
     ESPGravityMode GetGravityModeAtLocation(const FVector& WorldLocation) const;
 protected:
     /** 작업자: 김세훈 | 게임/PIE 월드에서만 생성한다. */

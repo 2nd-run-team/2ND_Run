@@ -11,7 +11,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSPGravityZoneChanged, ESPGravityMod
 /**
  * 작업자: 김세훈
  * 범위와 현재 중력을 관리한다. 실제 이동/물리는 각 대상이 적용한다.
- * 영역 밖 기본값은 무중력이며 중력 방향은 월드 아래 방향이다.
+ * 영역 밖 기본값은 중력이며 중력 방향은 월드 아래 방향이다.
  */
 UCLASS()
 class SPACEPIRATE_API ASPGravityZone : public AActor

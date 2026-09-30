@@ -1,0 +1,54 @@
+{
+  "date": "2026-09-30",
+  "engine": "5.8.2-56702186+++UE5+Release-5.8",
+  "asset_loads": 110,
+  "blueprints_compiled": 37,
+  "game_dependency_packages": 285,
+  "missing_dependencies": [],
+  "old_path_references": [],
+  "source_project_references": [],
+  "pie": [
+    {
+      "phase": "initial",
+      "worlds": 4,
+      "players_per_world": 4,
+      "speed_cm_per_second": 1500,
+      "motion_and_sky_states_match": true,
+      "spawn_height_cm": 308.15,
+      "detached_freight_components": 0
+    },
+    {
+      "phase": "stopped",
+      "worlds": 4,
+      "players_per_world": 4,
+      "speed_cm_per_second": 0,
+      "motion_and_sky_states_match": true,
+      "spawn_height_cm": 308.15,
+      "detached_freight_components": 0
+    },
+    {
+      "phase": "running_3000",
+      "worlds": 4,
+      "players_per_world": 4,
+      "speed_cm_per_second": 3000,
+      "motion_and_sky_states_match": true,
+      "spawn_height_cm": 308.15,
+      "detached_freight_components": 0
+    },
+    {
+      "phase": "sky_changed",
+      "worlds": 4,
+      "players_per_world": 4,
+      "speed_cm_per_second": 3000,
+      "motion_and_sky_states_match": true,
+      "spawn_height_cm": 308.15,
+      "detached_freight_components": 0
+    }
+  ],
+  "sky_transition_completed_on_all_worlds": true,
+  "limitations": [
+    "PIE listen server + 3 clients on one PC; not internet sessions or dedicated server",
+    "Speed and sky replication exercised by server Blueprint function calls; not an end-to-end keyboard/RPC or cargo interaction test",
+    "GPU memory and texture streaming budget warnings observed during simultaneous rendering"
+  ]
+}

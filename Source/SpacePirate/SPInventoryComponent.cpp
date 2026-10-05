@@ -1,4 +1,7 @@
+// 작성자 : 임진혁 (Prototype01 확보 중 슬롯 조작의 서버 차단)
 #include "SPInventoryComponent.h"
+#include "Prototype01/SP1InteractionComponent.h"
+#include "Prototype01/SP1SurvivalComponent.h"
 
 #include "SPCargo.h"
 #include "SPDebug.h"
@@ -76,6 +79,7 @@ int32 USPInventoryComponent::FindSlotForPickUp() const
 
 bool USPInventoryComponent::CanPickUp(const ASPCargo* Cargo) const
 {
+    if (const auto* Life = GetOwner()->FindComponentByClass<USP1SurvivalComponent>(); Life && Life->IsDead()) return false;
     if (!IsValid(Cargo) || IsGrippingLarge())
     {
         return false;
@@ -136,6 +140,8 @@ void USPInventoryComponent::ServerPickUp_Implementation(ASPCargo* Cargo)
 
 void USPInventoryComponent::ServerDrop_Implementation()
 {
+    if (const auto* Life = GetOwner()->FindComponentByClass<USP1SurvivalComponent>(); Life && Life->IsDead()) return;
+    if (const auto* Hold = GetOwner()->FindComponentByClass<USP1InteractionComponent>(); Hold && Hold->IsServerHolding()) return;
     // 들려 있던 Large는 인원이 모자라게 되면 그 자리에서 떨어진다. 잡기 상태는 OnLargeReleased에서 풀린다.
     if (ASPCargo* Large = GetGrippedLarge())
     {
@@ -161,6 +167,8 @@ void USPInventoryComponent::ServerDrop_Implementation()
 
 void USPInventoryComponent::ServerSelectSlot_Implementation(int32 SlotIndex)
 {
+    if (const auto* Life = GetOwner()->FindComponentByClass<USP1SurvivalComponent>(); Life && Life->IsDead()) return;
+    if (const auto* Hold = GetOwner()->FindComponentByClass<USP1InteractionComponent>(); Hold && Hold->IsServerHolding()) return;
     // 양손 화물을 들거나 Large를 잡은 동안에는 전환할 수 없다. 버려야 풀린다.
     if (!Slots.IsValidIndex(SlotIndex)
         || SlotIndex == ActiveSlot
@@ -277,6 +285,14 @@ void USPInventoryComponent::DropAll()
 
         Cargo = nullptr;
     }
+}
+
+void USPInventoryComponent::ReleaseAllForDeath()
+{
+    if (!GetOwner() || !GetOwner()->HasAuthority()) return;
+    DropAll();
+    OnRep_Inventory();
+    GetOwner()->ForceNetUpdate();
 }
 
 void USPInventoryComponent::OnRep_Inventory()

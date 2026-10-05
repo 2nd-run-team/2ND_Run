@@ -1,3 +1,4 @@
+// 작성자 : 임진혁 (Prototype01 JSONL 로그·임시 UMG HUD 의존성)
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
@@ -22,7 +23,13 @@ public class SpacePirate : ModuleRules
 		});
 
 		// 무중력 이동 패킷의 FVector_NetQuantize10 직렬화 구현에 필요하다.
-		PrivateDependencyModuleNames.AddRange(new string[] { "NetCore" });
+        PrivateDependencyModuleNames.AddRange(new string[] { "NetCore", "Json", "SlateCore", "Niagara" });
+
+		// 전용 HUD BP의 최초 템플릿 생성은 에디터에서만 사용한다.
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd", "UMGEditor" });
+		}
 
 		PublicIncludePaths.AddRange(new string[] {
 			"SpacePirate",

@@ -1,0 +1,261 @@
+{
+  "stage": "P1",
+  "verified_at": "2026-10-01T17:46:41+09:00",
+  "status": "Implemented; verified in two-player same-process Listen Server PIE; unperformed checks listed below",
+  "branch": "feature/teststage",
+  "start_head": "f2a62353815b1290279cf08d237f46a4df608312",
+  "engine": "5.8.2-56702186+++UE5+Release-5.8",
+  "map": "/Game/SpacePirate/Maps/Lvl_SPPrototype01",
+  "build": {
+    "target": "SpacePirateEditor Win64 Development",
+    "result": "Succeeded",
+    "project_generation": "Succeeded",
+    "log": "Saved/Prototype01/p1-build.log",
+    "warnings": [
+      "Installed MSVC 14.51 newer than recommended 14.50",
+      "Installed engine AIModule deprecated API warning"
+    ]
+  },
+  "assets": {
+    "prototype_blueprints": 7,
+    "prototype_game_dependency_packages": 337,
+    "prototype_errors": [],
+    "train_assets": 110,
+    "train_blueprints": 37,
+    "train_game_dependency_packages": 285,
+    "train_passed": true,
+    "validation_logs": [
+      "Saved/Prototype01/p1-assets-validation.json",
+      "Saved/TrainFreightMigration/asset-validation.json"
+    ]
+  },
+  "automation": {
+    "command": "UnrealEditor-Cmd SpacePirate.uproject -unattended -nullrhi -nosound -nop4 -culture=en -ExecCmds=\"Automation RunTests SpacePirate\" -TestExit=\"Automation Test Queue Empty\"",
+    "passed": 7,
+    "passed_with_warnings": 3,
+    "failed": 0,
+    "tests": [
+      {
+        "name": "SpacePirate.Cargo.Large",
+        "state": "Success",
+        "warnings": 17,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Cargo.LargeLeash",
+        "state": "Success",
+        "warnings": 37,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Gravity.Recovery",
+        "state": "Success",
+        "warnings": 3,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Gravity.Zones",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Prototype01.AttemptIdentity",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Prototype01.EndOrdering",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Prototype01.SettlementOnce",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      }
+    ],
+    "report": "Saved/Prototype01/Automation/index.json"
+  },
+  "pie": {
+    "environment": "Two players, Listen Server + Client, Run Under One Process; actual network RPC in next game Tick and Enhanced Input actions; position/aim/time fixtures; no direct cargo-completion/score writes",
+    "main_checks": 81,
+    "movement_checks": 13,
+    "client_disconnect_checks": 5,
+    "host_disconnect_checks": 4,
+    "all_passed": true,
+    "five_restarts": true,
+    "six_distinct_run_ids": [
+      "44EA74B2473CEAFC37C8BD85C5C4CD4B",
+      "9B1F5C8C40306B25F19E9BB06E0A90DC",
+      "2CE625E846C4776ED47CE185CF60B80D",
+      "D4237BD146E1E851C6FA98B13BA9747D",
+      "FF3025054B92A5C00D3C8F942646121A",
+      "625F21644A7753E3119A45A52121F248"
+    ],
+    "host_disconnect_run_id": "781010F24E3902858BB7299C2FEB834B",
+    "client_disconnect_run_id": "E7D390E047FC3AE385E7BCAB257E8DF4",
+    "aborted_hud_survives_fallback_map": true,
+    "movement_look_jump_background_train_state_rechecked": true,
+    "background_samples": 50,
+    "ui_mouse_buttons": [
+      "Client ready",
+      "Host ready",
+      "Host start",
+      "Host restart"
+    ],
+    "reports": [
+      "Saved/Prototype01/p1-pie.json",
+      "Saved/Prototype01/p1-movement.json",
+      "Saved/Prototype01/p1-disconnect.json",
+      "Saved/Prototype01/p1-host-disconnect.json",
+      "Saved/Prototype01/pie-input.json",
+      "Saved/Prototype01/p1-ui.json"
+    ]
+  },
+  "ledger_audit": [
+    {
+      "run_id": "44EA74B2473CEAFC37C8BD85C5C4CD4B",
+      "cargo_credits": [
+        {
+          "cargo_id": "P01_C01_Alloy",
+          "value": 160
+        }
+      ],
+      "run_end_count": 1,
+      "phase": "Succeeded",
+      "reason": "Departed",
+      "team_value": 160,
+      "final_value": 160
+    },
+    {
+      "run_id": "9B1F5C8C40306B25F19E9BB06E0A90DC",
+      "cargo_credits": [
+        {
+          "cargo_id": "P01_C01_Supply",
+          "value": 40
+        }
+      ],
+      "run_end_count": 1,
+      "phase": "Succeeded",
+      "reason": "Departed",
+      "team_value": 40,
+      "final_value": 40
+    },
+    {
+      "run_id": "2CE625E846C4776ED47CE185CF60B80D",
+      "cargo_credits": [
+        {
+          "cargo_id": "P01_C01_Supply",
+          "value": 40
+        }
+      ],
+      "run_end_count": 1,
+      "phase": "Failed",
+      "reason": "EmptyExtraction",
+      "team_value": 40,
+      "final_value": 0
+    },
+    {
+      "run_id": "D4237BD146E1E851C6FA98B13BA9747D",
+      "cargo_credits": [
+        {
+          "cargo_id": "P01_C01_Supply",
+          "value": 40
+        }
+      ],
+      "run_end_count": 1,
+      "phase": "Failed",
+      "reason": "MissionExpired",
+      "team_value": 40,
+      "final_value": 0
+    },
+    {
+      "run_id": "FF3025054B92A5C00D3C8F942646121A",
+      "cargo_credits": [
+        {
+          "cargo_id": "P01_C01_Supply",
+          "value": 40
+        }
+      ],
+      "run_end_count": 1,
+      "phase": "Succeeded",
+      "reason": "Departed",
+      "team_value": 40,
+      "final_value": 40
+    }
+  ],
+  "preservation": {
+    "baseline_entries": 2979,
+    "missing_baseline_entries": [],
+    "cpp_files": 20,
+    "missing_authors": [],
+    "python_syntax": "passed",
+    "tracked_changes": [
+      "Source/SpacePirate/SPCharacterMovementComponent.cpp",
+      "Source/SpacePirate/SPCharacterMovementComponent.h",
+      "Source/SpacePirate/SPInventoryComponent.cpp",
+      "Source/SpacePirate/SPPlayerCharacter.cpp",
+      "Source/SpacePirate/SpacePirate.Build.cs"
+    ]
+  },
+  "editor_cleanup": {
+    "dirty_maps": [],
+    "dirty_content": [],
+    "pie_worlds": 0,
+    "editor_world": "/Game/SpacePirate/Maps/Lvl_SPPrototype01.Lvl_SPPrototype01",
+    "play": {
+      "PlayNumberOfClients": "1",
+      "RunUnderOneProcess": "True",
+      "NewWindowWidth": "1280",
+      "NewWindowHeight": "720"
+    },
+    "bThrottleCPUWhenNotForeground": true,
+    "mcp_stop_requested": true,
+    "python_remote_execution": false,
+    "PlayNetMode": "PIE_Standalone (MCP get_properties verified)",
+    "mcp_endpoint_final_http_status": 404
+  },
+  "known_tooling_observations": [
+    "Default Korean-culture editor startup emits 15 engine UnifiedError smoke-test Condition failed messages. Final English-culture project automation emits none and all seven project tests pass. Engine source unchanged.",
+    "Initial HUD-template compiler name collision was fixed with BindWidget; saved final seven blueprints compile without errors.",
+    "Temporary editor Python inspection needed native property names and MCP enum serialization; cleanup finally verified."
+  ],
+  "unperformed": [
+    "Auditory review of selected cue timbre, loudness, attenuation and host/client duplicate playback",
+    "OS keyboard E-hold/focus-loss matrix (Enhanced Input injection and heartbeat starvation were tested)",
+    "Separate-process or separate-PC network, packet loss/latency, four-player session, packaged build",
+    "P2 health/death integration, later-stage device/gravity triggers, late-join spectator UI"
+  ],
+  "next_stage_contracts": [
+    "P2 must supply authoritative health/alive state; current P1 alive check is pawn/controller/playerstate/spectator/movement mode.",
+    "Keep P1 component opt-in and existing Train/PlanetTrain hierarchy. Extend only dedicated assets and CargoId/CarId assignment."
+  ],
+  "lfs": {
+    "prototype_locks_retained": 13,
+    "owner": "bizet12",
+    "original_train_lock_untouched": true,
+    "committed": false,
+    "pushed": false,
+    "pr_created": false,
+    "team_message_sent": false
+  },
+  "asset_sha256": {
+    "Content/SpacePirate/Prototype01/Audio/ATT_SP1Cargo.uasset": "dbb86938047a0aa861c021cc534226e7bcca163f644834128d69154d3ec29a62",
+    "Content/SpacePirate/Prototype01/Blueprints/BP_SP1ExtractionZone.uasset": "3d6dda77703f627e7a771a2ab7ca3dde10663ff611fec5e71e735bf0154e6bc2",
+    "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GameMode.uasset": "8af676ca71f43c05dc44ae3257cf83f7cd6dbb25ae11a6f9e966729ae6e74cb0",
+    "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GameState.uasset": "5be8cda92f38eef923193d41895c2300da68e3f91d5c84596f54e614bdd12940",
+    "Content/SpacePirate/Prototype01/Blueprints/BP_SP1PlayerCharacter.uasset": "d19c5e62da7a677396d31e8eeceb421b1812bd43a3f6c7d86c42f17c3985ca4b",
+    "Content/SpacePirate/Prototype01/Blueprints/BP_SP1PlayerController.uasset": "b7b6a6f70093c56b16464e652f71613ddcbd60259d060185db866c1e442e736d",
+    "Content/SpacePirate/Prototype01/Blueprints/BP_SP1TransferCargo.uasset": "4d61ca7a88e92400025f47c81fe157e3f80e681be9471d36c634bb6c4e148010",
+    "Content/SpacePirate/Prototype01/Data/DA_SP1Alloy.uasset": "b6ceffffa4ad930d102d634d22af3ddf3f3d91ea3ad297f8d97954f3de1aff70",
+    "Content/SpacePirate/Prototype01/Data/DA_SP1Core.uasset": "40e0a0ab7843be2fe621cecc55ca78ff2f77c66e4099049a0bdf666f92d424c3",
+    "Content/SpacePirate/Prototype01/Data/DA_SP1Parts.uasset": "f7ccd5c14554e0abb147191140cc503c7fece61cebd214009f8b288be8d930a4",
+    "Content/SpacePirate/Prototype01/Data/DA_SP1Supply.uasset": "5aa3e45baf61d044c4565ec0dd5c2c9db96e830b9133af144a57ee3946880148",
+    "Content/SpacePirate/Prototype01/UI/WBP_SP1HUD.uasset": "7bf7622fb7cfedcf0dcafbb7d558b9d42eb6fdcacb61fbdc9f247c57ddaf2580",
+    "Content/SpacePirate/Maps/Lvl_SPPrototype01.umap": "fc82e6214539866027f8d6b1fe6d07c5fa436c17ca12ec6326a4ee4a4348cb2b"
+  }
+}

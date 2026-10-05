@@ -1,0 +1,380 @@
+{
+  "stage": "P2",
+  "verified_at": "2026-10-01T18:42:27+09:00",
+  "status": "Implemented and verified in two-player same-process Listen Server PIE; unperformed checks listed explicitly",
+  "branch": "feature/teststage",
+  "start_head": "f2a62353815b1290279cf08d237f46a4df608312",
+  "engine": "5.8.2-56702186+++UE5+Release-5.8",
+  "map": "/Game/SpacePirate/Maps/Lvl_SPPrototype01",
+  "build": {
+    "target": "SpacePirateEditor Win64 Development",
+    "result": "Succeeded",
+    "project_generation": "Succeeded",
+    "log": "Saved/Prototype01/p2-build.log",
+    "warnings": [
+      "MSVC 14.51 newer than recommended 14.50",
+      "Installed engine deprecated API warnings"
+    ]
+  },
+  "assets": {
+    "blueprints": 8,
+    "dependency_packages": 353,
+    "missing": [],
+    "errors": [],
+    "actors": 28,
+    "walking": {
+      "common": 400.0,
+      "prototype": 450.0,
+      "sprint": 700.0
+    },
+    "survival": {
+      "replicates": true,
+      "sprint_drain": 20.0,
+      "recovery_delay": 0.75,
+      "recovery_rate": 25.0
+    },
+    "laser": {
+      "on_seconds": 2.0,
+      "off_seconds": 2.0,
+      "warning_seconds": 0.5,
+      "wound_amount": 20.0,
+      "damage_interval": 1.0,
+      "id": "P01_C01_Laser01",
+      "position": [
+        -950.0,
+        100.0,
+        330.0
+      ],
+      "beam": "/Game/Assets/VFX/FreeStylizedLaserBeamVFX/VFX/NS_Laser_01.NS_Laser_01",
+      "warning_sound": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Futuristic_Alarm_01_wav_Cue.Futuristic_Alarm_01_wav_Cue",
+      "bounds": [
+        14.0,
+        210.0,
+        120.0
+      ]
+    },
+    "train_assets": 110,
+    "train_blueprints": 37,
+    "train_dependencies": 285,
+    "train_errors": []
+  },
+  "automation": {
+    "passed": 9,
+    "passed_with_warnings": 3,
+    "failed": 0,
+    "tests": [
+      {
+        "name": "SpacePirate.Cargo.Large",
+        "state": "Success",
+        "warnings": 17,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Cargo.LargeLeash",
+        "state": "Success",
+        "warnings": 37,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Gravity.Recovery",
+        "state": "Success",
+        "warnings": 3,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Gravity.Zones",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Prototype01.AttemptIdentity",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Prototype01.EndOrdering",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Prototype01.LaserClock",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Prototype01.SettlementOnce",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      },
+      {
+        "name": "SpacePirate.Prototype01.SurvivalBudget",
+        "state": "Success",
+        "warnings": 0,
+        "errors": 0
+      }
+    ]
+  },
+  "pie": {
+    "checks": {
+      "p2-pie": {
+        "passed": true,
+        "checks": 77,
+        "file": "Saved/Prototype01/p2-pie.json"
+      },
+      "p1-pie": {
+        "passed": true,
+        "checks": 81,
+        "file": "Saved/Prototype01/p1-pie.json"
+      },
+      "p1-movement": {
+        "passed": true,
+        "checks": 13,
+        "file": "Saved/Prototype01/p1-movement.json"
+      },
+      "p1-disconnect": {
+        "passed": true,
+        "checks": 5,
+        "file": "Saved/Prototype01/p1-disconnect.json"
+      },
+      "p1-host-disconnect": {
+        "passed": true,
+        "checks": 4,
+        "file": "Saved/Prototype01/p1-host-disconnect.json"
+      }
+    },
+    "total_checks": 180,
+    "background_movement_samples": 50,
+    "max_remote_stamina_difference": 1.3949737548828125,
+    "max_warning_transition_difference_seconds": 0.024399999529123306,
+    "method": "Two PIE worlds; Enhanced Input + owned Pawn RPC; server impact/position fixtures",
+    "ledger": [
+      {
+        "RunId": "1A7246C346EE1A6D66C5238A4A5778FE",
+        "reason": "Departed",
+        "team_value": 160,
+        "final_value": 160,
+        "end_events": 1
+      },
+      {
+        "RunId": "290766F348B70063BE64BC8D1FDD9CF0",
+        "reason": "Departed",
+        "team_value": 40,
+        "final_value": 40,
+        "end_events": 1
+      },
+      {
+        "RunId": "0A31C3CE4A2CE4FF28FFC59170D4E54C",
+        "reason": "EmptyExtraction",
+        "team_value": 40,
+        "final_value": 0,
+        "end_events": 1
+      },
+      {
+        "RunId": "B044D39940D46CD85D9B26BCF6CE9D0D",
+        "reason": "MissionExpired",
+        "team_value": 40,
+        "final_value": 0,
+        "end_events": 1
+      },
+      {
+        "RunId": "61C83B6249A5F9BE06923CB6C2F03F0F",
+        "reason": "Departed",
+        "team_value": 40,
+        "final_value": 40,
+        "end_events": 1
+      }
+    ]
+  },
+  "visuals": {
+    "inspected": [
+      "Host and client four ON beams / OFF",
+      "W20 S80 M80 single gauge",
+      "SAFE WALK route and exit",
+      "Client dead W100 S0 M0 spectator HUD / living teammate view"
+    ],
+    "captures": [
+      "Saved/Prototype01/p2-host-laser-on.png",
+      "Saved/Prototype01/p2-client-wound-bypass.png",
+      "Saved/Prototype01/p2-client-spectator.png"
+    ]
+  },
+  "preservation": {
+    "baseline_untracked_preserved": 3014,
+    "missing_baseline_files": [],
+    "changed_from_p1": [
+      "Source/SpacePirate/Prototype01/SP1HUDWidget.cpp",
+      "Source/SpacePirate/Prototype01/SP1HUDWidget.h",
+      "Source/SpacePirate/Prototype01/SP1InteractionComponent.cpp",
+      "Source/SpacePirate/Prototype01/SP1RoundComponent.cpp",
+      "Source/SpacePirate/Prototype01/SP1RoundComponent.h",
+      "Source/SpacePirate/Prototype01/Editor/SP1EditorLibrary.cpp",
+      "Source/SpacePirate/Prototype01/Editor/SP1EditorLibrary.h",
+      "Source/SpacePirate/Prototype01/Tests/SP1PIETestLibrary.cpp",
+      "Source/SpacePirate/Prototype01/Tests/SP1PIETestLibrary.h",
+      "Content/SpacePirate/Prototype01/Blueprints/BP_SP1PlayerCharacter.uasset",
+      "Content/SpacePirate/Prototype01/UI/WBP_SP1HUD.uasset",
+      "Content/SpacePirate/Maps/Lvl_SPPrototype01.umap",
+      "Source/SpacePirate/SPCharacterMovementComponent.cpp",
+      "Source/SpacePirate/SPCharacterMovementComponent.h",
+      "Source/SpacePirate/SPInventoryComponent.cpp",
+      "Source/SpacePirate/SPInventoryComponent.h",
+      "Source/SpacePirate/SPPlayerCharacter.cpp",
+      "Source/SpacePirate/SpacePirate.Build.cs"
+    ],
+    "original_tracked_content_config_uproject_changes": [],
+    "prototype_native_author_headers": 28,
+    "prototype_lfs_locks": [
+      {
+        "id": "53250525",
+        "path": "Content/SpacePirate/Maps/Lvl_SPPrototype01.umap",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-09-30T18:50:47Z"
+      },
+      {
+        "id": "53250549",
+        "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1PlayerCharacter.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-09-30T18:51:14Z"
+      },
+      {
+        "id": "53250551",
+        "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1PlayerController.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-09-30T18:51:15Z"
+      },
+      {
+        "id": "53250552",
+        "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GameState.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-09-30T18:51:17Z"
+      },
+      {
+        "id": "53250553",
+        "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GameMode.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-09-30T18:51:18Z"
+      },
+      {
+        "id": "53271396",
+        "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1TransferCargo.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-10-01T07:32:52Z"
+      },
+      {
+        "id": "53271398",
+        "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1ExtractionZone.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-10-01T07:32:53Z"
+      },
+      {
+        "id": "53271399",
+        "path": "Content/SpacePirate/Prototype01/UI/WBP_SP1HUD.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-10-01T07:32:54Z"
+      },
+      {
+        "id": "53271400",
+        "path": "Content/SpacePirate/Prototype01/Data/DA_SP1Supply.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-10-01T07:32:55Z"
+      },
+      {
+        "id": "53271401",
+        "path": "Content/SpacePirate/Prototype01/Data/DA_SP1Parts.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-10-01T07:32:57Z"
+      },
+      {
+        "id": "53271402",
+        "path": "Content/SpacePirate/Prototype01/Data/DA_SP1Alloy.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-10-01T07:32:58Z"
+      },
+      {
+        "id": "53271403",
+        "path": "Content/SpacePirate/Prototype01/Data/DA_SP1Core.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-10-01T07:32:59Z"
+      },
+      {
+        "id": "53277609",
+        "path": "Content/SpacePirate/Prototype01/Audio/ATT_SP1Cargo.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-10-01T08:02:34Z"
+      },
+      {
+        "id": "53279108",
+        "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1LaserHazard.uasset",
+        "owner": {
+          "name": "bizet12"
+        },
+        "locked_at": "2026-10-01T09:08:40Z"
+      }
+    ],
+    "new_laser_lock": "53279108"
+  },
+  "cleanup": {
+    "dirty_maps": [],
+    "dirty_content": [],
+    "pie_worlds": 0,
+    "editor_world": "/Game/SpacePirate/Maps/Lvl_SPPrototype01.Lvl_SPPrototype01",
+    "play": {
+      "PlayNumberOfClients": "1",
+      "RunUnderOneProcess": "True",
+      "NewWindowWidth": "1280",
+      "NewWindowHeight": "720"
+    },
+    "bThrottleCPUWhenNotForeground": true,
+    "mcp_stop_requested": true,
+    "python_remote_execution": false,
+    "play_mode": "PIE_Standalone",
+    "mcp_endpoint_status": 404
+  },
+  "unperformed": [
+    "Audio audition / actual perceived volume, attenuation and simultaneous playback",
+    "Separate processes / PCs, packet delay or loss, four players, packaged build",
+    "OS held-key + Alt-Tab matrix; tests used actual Enhanced Input injection"
+  ],
+  "resolved_during_validation": [
+    "UE 5.8 widget GUID registration during native HUD extension",
+    "Placed laser instance retained None asset overrides; repaired, saved and reloaded",
+    "Python test reflection / vector method errors repaired before final suites"
+  ],
+  "next_stage_contract": [
+    "Preserve owned Pawn interaction RPC and server Round ordering",
+    "All future device work must respect server IsAlive and CancelOnServer",
+    "Maintenance/revival/S01/P3 remain unimplemented"
+  ],
+  "no_commit_push_pr_messages": true
+}

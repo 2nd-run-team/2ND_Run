@@ -1,0 +1,391 @@
+{
+  "date": "2026-10-01",
+  "timezone": "Asia/Seoul",
+  "stage": "P0",
+  "author": "임진혁",
+  "branch": "feature/teststage",
+  "base_commit": "f2a6235",
+  "engine": "5.8.2-56702186+++UE5+Release-5.8",
+  "baseline_validation": {
+    "exit_code": 0,
+    "passed": true,
+    "asset_count": 110,
+    "blueprint_count": 37,
+    "dependency_package_count": 285,
+    "missing_count": 0,
+    "old_reference_count": 0,
+    "source_project_reference_count": 0,
+    "errors": []
+  },
+  "observed_baseline_blueprints": {
+    "/Game/SpacePirate/Player/Blueprints/BP_SPPlayerCharacter": {
+      "parent": "/Script/SpacePirate.SPPlayerCharacter",
+      "defaults": {
+        "moveAction": {
+          "refPath": "/Game/SpacePirate/Player/Input/IA_SPMove.IA_SPMove"
+        },
+        "lookAction": {
+          "refPath": "/Game/SpacePirate/Player/Input/IA_SPLook.IA_SPLook"
+        },
+        "jumpAction": {
+          "refPath": "/Game/SpacePirate/Player/Input/IA_SPJump.IA_SPJump"
+        },
+        "sprintAction": {
+          "refPath": "/Game/SpacePirate/Player/Input/IA_SPSprint.IA_SPSprint"
+        },
+        "interactAction": {
+          "refPath": "/Game/Input/Actions/IA_Interact.IA_Interact"
+        },
+        "dropAction": {
+          "refPath": "/Game/SpacePirate/Player/Input/IA_SPDrop.IA_SPDrop"
+        }
+      },
+      "graphs": "[\"UserConstructionScript\", \"EventGraph\"]",
+      "movement": {
+        "MaxWalkSpeed": 400,
+        "SprintSpeed": 700,
+        "ZeroGravityMaxSpeed": 700,
+        "ZeroGravityAcceleration": 500,
+        "ZeroGravityDrag": 0
+      }
+    },
+    "/Game/SpacePirate/Player/Blueprints/BP_SPPlayerController": {
+      "parent": "/Script/SpacePirate.SpacePiratePlayerController",
+      "defaults": {
+        "defaultMappingContexts": [
+          {
+            "refPath": "/Game/SpacePirate/Player/Input/IMC_SPPlayer.IMC_SPPlayer"
+          }
+        ]
+      },
+      "graphs": "[\"UserConstructionScript\", \"EventGraph\"]"
+    },
+    "/Game/SpacePirate/Core/Blueprints/BP_SPGameMode": {
+      "parent": "/Script/SpacePirate.SpacePirateGameMode",
+      "defaults": {
+        "gameStateClass": {
+          "refPath": "/Script/Engine.GameStateBase"
+        },
+        "playerControllerClass": {
+          "refPath": "/Game/SpacePirate/Player/Blueprints/BP_SPPlayerController.BP_SPPlayerController_C"
+        },
+        "playerStateClass": {
+          "refPath": "/Script/Engine.PlayerState"
+        },
+        "defaultPawnClass": {
+          "refPath": "/Game/SpacePirate/Player/Blueprints/BP_SPPlayerCharacter.BP_SPPlayerCharacter_C"
+        }
+      },
+      "graphs": "[\"UserConstructionScript\", \"EventGraph\"]"
+    },
+    "/Game/SpacePirate/Train/Framework/BP_SPTrainPlayerController": {
+      "parent": "/Game/SpacePirate/Player/Blueprints/BP_SPPlayerController.BP_SPPlayerController_C",
+      "defaults": {
+        "defaultMappingContexts": [
+          {
+            "refPath": "/Game/SpacePirate/Player/Input/IMC_SPPlayer.IMC_SPPlayer"
+          }
+        ]
+      },
+      "graphs": "[\"UserConstructionScript\", \"EventGraph\"]"
+    },
+    "/Game/SpacePirate/Train/Framework/GameModes/BP_SPTrainGameMode": {
+      "parent": "/Game/SpacePirate/Core/Blueprints/BP_SPGameMode.BP_SPGameMode_C",
+      "defaults": {
+        "gameStateClass": {
+          "refPath": "/Game/SpacePirate/Train/Framework/GameStates/BP_SPTrainGameState.BP_SPTrainGameState_C"
+        },
+        "playerControllerClass": {
+          "refPath": "/Game/SpacePirate/Train/Framework/BP_SPTrainPlayerController.BP_SPTrainPlayerController_C"
+        },
+        "playerStateClass": {
+          "refPath": "/Script/Engine.PlayerState"
+        },
+        "defaultPawnClass": {
+          "refPath": "/Game/SpacePirate/Player/Blueprints/BP_SPPlayerCharacter.BP_SPPlayerCharacter_C"
+        }
+      },
+      "graphs": "[\"UserConstructionScript\", \"EventGraph\"]"
+    },
+    "/Game/SpacePirate/Train/Framework/GameStates/BP_SPTrainGameState": {
+      "parent": "/Script/Engine.GameStateBase",
+      "defaults": {
+        "motionState": {
+          "revision": 0,
+          "epochServerTime": 0,
+          "distanceAtEpoch": 0,
+          "speedAtEpoch": 0,
+          "targetSpeed": 0,
+          "signedAcceleration": 0,
+          "environmentSeed": 0
+        }
+      },
+      "graphs": "[\"UserConstructionScript\", \"EvaluateMotionAtTime\", \"GetTravelState\", \"SetTrainSpeed\", \"EventGraph\"]"
+    },
+    "/Game/SpacePirate/Train/Environment/PlanetFlyby/Blueprints/BP_SPPlanetTrainGameMode": {
+      "parent": "/Game/SpacePirate/Train/Framework/GameModes/BP_SPTrainGameMode.BP_SPTrainGameMode_C",
+      "defaults": {
+        "gameStateClass": {
+          "refPath": "/Game/SpacePirate/Train/Environment/PlanetFlyby/Blueprints/BP_SPPlanetTrainGameState.BP_SPPlanetTrainGameState_C"
+        },
+        "playerControllerClass": {
+          "refPath": "/Game/SpacePirate/Train/Environment/PlanetFlyby/Blueprints/BP_SPPlanetTrainPlayerController.BP_SPPlanetTrainPlayerController_C"
+        },
+        "playerStateClass": {
+          "refPath": "/Script/Engine.PlayerState"
+        },
+        "defaultPawnClass": {
+          "refPath": "/Game/SpacePirate/Player/Blueprints/BP_SPPlayerCharacter.BP_SPPlayerCharacter_C"
+        }
+      },
+      "graphs": "[\"UserConstructionScript\", \"EventGraph\"]"
+    },
+    "/Game/SpacePirate/Train/Environment/PlanetFlyby/Blueprints/BP_SPPlanetTrainGameState": {
+      "parent": "/Game/SpacePirate/Train/Framework/GameStates/BP_SPTrainGameState.BP_SPTrainGameState_C",
+      "defaults": {
+        "skyCatalog": {
+          "refPath": "/Game/SpacePirate/Train/Environment/PlanetFlyby/Data/DA_SPPlanetSkyCatalog.DA_SPPlanetSkyCatalog"
+        },
+        "motionState": {
+          "revision": 0,
+          "epochServerTime": 0,
+          "distanceAtEpoch": 0,
+          "speedAtEpoch": 0,
+          "targetSpeed": 0,
+          "signedAcceleration": 0,
+          "environmentSeed": 0
+        }
+      },
+      "graphs": "[\"UserConstructionScript\", \"RequestNextSky\", \"EventGraph\"]"
+    },
+    "/Game/SpacePirate/Train/Environment/PlanetFlyby/Blueprints/BP_SPPlanetTrainPlayerController": {
+      "parent": "/Game/SpacePirate/Train/Framework/BP_SPTrainPlayerController.BP_SPTrainPlayerController_C",
+      "defaults": {
+        "defaultMappingContexts": [
+          {
+            "refPath": "/Game/SpacePirate/Player/Input/IMC_SPPlayer.IMC_SPPlayer"
+          }
+        ]
+      },
+      "graphs": "[\"UserConstructionScript\", \"EventGraph\"]"
+    },
+    "/Game/SpacePirate/Train/Freight/Blueprints/BP_SPTrainConsist": {
+      "parent": "/Script/Engine.Actor",
+      "defaults": {
+        "maxCars": 8,
+        "carSequence": [
+          {
+            "refPath": "/Game/SpacePirate/Train/Freight/Data/DA_SPCar_Normal.DA_SPCar_Normal"
+          },
+          {
+            "refPath": "/Game/SpacePirate/Train/Freight/Data/DA_SPCar_Big.DA_SPCar_Big"
+          },
+          {
+            "refPath": "/Game/SpacePirate/Train/Freight/Data/DA_SPCar_Long.DA_SPCar_Long"
+          }
+        ]
+      },
+      "graphs": "[\"UserConstructionScript\", \"AddModule\", \"ConnectCars\", \"ResolveFreightEndCapClass\", \"EventGraph\"]"
+    }
+  },
+  "prototype_validation": {
+    "engine": "5.8.2-56702186+++UE5+Release-5.8",
+    "map": "/Game/SpacePirate/Maps/Lvl_SPPrototype01",
+    "blueprints": [
+      {
+        "path": "/Game/SpacePirate/Prototype01/Blueprints/BP_SP1PlayerCharacter.BP_SP1PlayerCharacter",
+        "parent": "/Game/SpacePirate/Player/Blueprints/BP_SPPlayerCharacter.BP_SPPlayerCharacter_C",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "path": "/Game/SpacePirate/Prototype01/Blueprints/BP_SP1PlayerController.BP_SP1PlayerController",
+        "parent": "/Game/SpacePirate/Train/Environment/PlanetFlyby/Blueprints/BP_SPPlanetTrainPlayerController.BP_SPPlanetTrainPlayerController_C",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "path": "/Game/SpacePirate/Prototype01/Blueprints/BP_SP1GameState.BP_SP1GameState",
+        "parent": "/Game/SpacePirate/Train/Environment/PlanetFlyby/Blueprints/BP_SPPlanetTrainGameState.BP_SPPlanetTrainGameState_C",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      },
+      {
+        "path": "/Game/SpacePirate/Prototype01/Blueprints/BP_SP1GameMode.BP_SP1GameMode",
+        "parent": "/Game/SpacePirate/Train/Environment/PlanetFlyby/Blueprints/BP_SPPlanetTrainGameMode.BP_SPPlanetTrainGameMode_C",
+        "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>"
+      }
+    ],
+    "errors": [],
+    "input_mappings": [
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPMove.IA_SPMove",
+        "key": "W"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPLook.IA_SPLook",
+        "key": "MouseX"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPJump.IA_SPJump",
+        "key": "SpaceBar"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPSprint.IA_SPSprint",
+        "key": "LeftShift"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPMove.IA_SPMove",
+        "key": "S"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPMove.IA_SPMove",
+        "key": "A"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPMove.IA_SPMove",
+        "key": "D"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPLook.IA_SPLook",
+        "key": "MouseY"
+      },
+      {
+        "action": "/Game/Input/Actions/IA_Interact.IA_Interact",
+        "key": "E"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPDrop.IA_SPDrop",
+        "key": "G"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPSelectSlot.IA_SPSelectSlot",
+        "key": "One"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPSelectSlot.IA_SPSelectSlot",
+        "key": "Two"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPSelectSlot.IA_SPSelectSlot",
+        "key": "Three"
+      },
+      {
+        "action": "/Game/SpacePirate/Player/Input/IA_SPCycleSlot.IA_SPCycleSlot",
+        "key": "MouseWheelAxis"
+      }
+    ],
+    "interact": {
+      "asset": "/Game/Input/Actions/IA_Interact.IA_Interact",
+      "value_type": "<InputActionValueType.BOOLEAN: 0>",
+      "triggers": []
+    },
+    "sky_catalog": "/Game/SpacePirate/Train/Environment/PlanetFlyby/Data/DA_SPPlanetSkyCatalog.DA_SPPlanetSkyCatalog",
+    "scene_preset": "/Game/SpacePirate/Train/Freight/Data/DA_SPTrainScene_FreightPlanet.DA_SPTrainScene_FreightPlanet",
+    "exit_zone": {
+      "center": [
+        -650.0,
+        0.0,
+        330.0
+      ],
+      "half_extent": [
+        200.0,
+        150.0,
+        120.0
+      ]
+    },
+    "starts": [
+      [
+        -1900.0,
+        -90.0,
+        320.0
+      ],
+      [
+        -1900.0,
+        90.0,
+        320.0
+      ],
+      [
+        -1600.0,
+        -90.0,
+        320.0
+      ],
+      [
+        -1600.0,
+        90.0,
+        320.0
+      ]
+    ],
+    "car_count": 1,
+    "map_actors": 17,
+    "game_dependency_packages": 277,
+    "missing_dependencies": [],
+    "passed": true
+  },
+  "pie": {
+    "passed": true,
+    "method": "Enhanced Input action injection; not OS keyboard/mouse",
+    "mode": "Listen Server + 1 Client, Run Under One Process",
+    "duration_seconds": 7.926369201391935,
+    "metrics": [
+      {
+        "authority": true,
+        "player_count": 2,
+        "local_player_count": 1,
+        "movement_cm": 294.9231935517448,
+        "look_yaw_degrees": 75.01167058944702,
+        "jump_height_cm": 89.93320828105487,
+        "final_position": [
+          -1605.0768064482552,
+          -90.0,
+          308.1499974615037
+        ],
+        "background_managers": 2,
+        "background_distance_advance_cm": 11883.70680436492
+      },
+      {
+        "authority": false,
+        "player_count": 2,
+        "local_player_count": 1,
+        "movement_cm": 294.9236765423748,
+        "look_yaw_degrees": 75.01167058944702,
+        "jump_height_cm": 89.93315115330734,
+        "final_position": [
+          -1305.0763234576252,
+          90.0,
+          308.1499967141347
+        ],
+        "background_managers": 2,
+        "background_distance_advance_cm": 11882.011782377958
+      }
+    ],
+    "motion_state_equal": true,
+    "initial_sky_transition_equal": true,
+    "settled_position_difference_under_5_cm": true,
+    "train_fixed": true,
+    "mutual_character_render_visually_confirmed": true,
+    "space_jump_visually_confirmed_both": true,
+    "client_mouse_look_visually_confirmed": true,
+    "client_visibility_capture_used_runtime_view_rotation": true
+  },
+  "original_tracked_files_unchanged": true,
+  "cpp_build": {
+    "executed": false,
+    "reason": "No C++, UCLASS, module or project configuration changes in P0"
+  },
+  "untested": [
+    "separate machines/processes",
+    "four simultaneous players",
+    "latency and packet loss",
+    "full cargo and gravity regression suite",
+    "sky transition request/animation",
+    "packaging"
+  ],
+  "local_evidence": [
+    "Saved/Logs/Plan01-P0-baseline.log",
+    "Saved/TrainFreightMigration/asset-validation.json",
+    "Saved/Prototype01/baseline-audit.json",
+    "Saved/Prototype01/validate-final.log",
+    "Saved/Prototype01/asset-validation.json",
+    "Saved/Prototype01/pie-input.json",
+    "Saved/Prototype01/server-view.png",
+    "Saved/Prototype01/client-view.png"
+  ]
+}

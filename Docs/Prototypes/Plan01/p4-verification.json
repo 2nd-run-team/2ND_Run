@@ -1,0 +1,909 @@
+{
+  "stage": "P4",
+  "author": "임진혁",
+  "verified_at": "2026-10-01T20:51:42.896301+09:00",
+  "status": "Implemented; local 2/4-player rule checks and continuous-input ten-car rounds passed. Unperformed checks and limits are explicit below.",
+  "branch": "feature/teststage",
+  "head": "f2a62353815b1290279cf08d237f46a4df608312",
+  "engine": "5.8.2-56702186+++UE5+Release-5.8",
+  "map": "/Game/SpacePirate/Maps/Lvl_SPPrototype01",
+  "build": {
+    "target": "SpacePirateEditor Win64 Development",
+    "result": "Succeeded",
+    "project_generation": "Succeeded",
+    "log": "Saved/Prototype01/p4-build-final.log",
+    "project_generation_log": "Saved/Prototype01/p4-projectfiles.log"
+  },
+  "assets": {
+    "passed": true,
+    "blueprints": 14,
+    "actors": 144,
+    "dependency_packages": 404,
+    "errors": [],
+    "missing_dependencies": [],
+    "budget": {
+      "normal": 40,
+      "special": 2,
+      "value": 7060,
+      "rows": [
+        {
+          "car": "P01_C01",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Supply.DA_SP1Supply",
+          "special": false,
+          "count": 4
+        },
+        {
+          "car": "P01_C02",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C02",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Alloy.DA_SP1Alloy",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C06",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C04",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1S01.DA_SP1S01",
+          "special": true,
+          "count": 1
+        },
+        {
+          "car": "P01_C04",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C03",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 4
+        },
+        {
+          "car": "P01_C04",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C06",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Alloy.DA_SP1Alloy",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C07",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 6
+        },
+        {
+          "car": "P01_C07",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Alloy.DA_SP1Alloy",
+          "special": false,
+          "count": 4
+        },
+        {
+          "car": "P01_C08",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C08",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C08",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1S01.DA_SP1S01",
+          "special": true,
+          "count": 1
+        },
+        {
+          "car": "P01_C09",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C09",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Alloy.DA_SP1Alloy",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C10",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        }
+      ]
+    },
+    "settings": [
+      {
+        "id": "FourPlayer420",
+        "seconds": 420.0,
+        "players": 4
+      },
+      {
+        "id": "TwoPlayer600",
+        "seconds": 600.0,
+        "players": 2
+      },
+      {
+        "id": "Original600",
+        "seconds": 600.0,
+        "players": 4
+      }
+    ],
+    "exits": [
+      {
+        "id": "P01_C10_Final",
+        "label": "C10 기관실 최종 탈출",
+        "position": [
+          -850.0,
+          0.0,
+          350.0
+        ],
+        "extent": [
+          200.0,
+          200.0,
+          140.0
+        ],
+        "protected": true,
+        "approach_cm": 200.0
+      },
+      {
+        "id": "P01_C05_Mid",
+        "label": "C05 정비 중간 탈출",
+        "position": [
+          -11700.0,
+          0.0,
+          350.0
+        ],
+        "extent": [
+          200.0,
+          200.0,
+          140.0
+        ],
+        "protected": false,
+        "approach_cm": 200.0
+      }
+    ],
+    "walking": {
+      "common": 400.0,
+      "prototype": 450.0,
+      "sprint": 700.0
+    },
+    "report": "Saved/Prototype01/p4-assets-validation.json",
+    "measurements": "Saved/Prototype01/p4-measurements.json"
+  },
+  "original_train_validation": {
+    "assets": 110,
+    "blueprints": 37,
+    "dependency_packages": 285,
+    "errors": 0,
+    "report": "Saved/TrainFreightMigration/asset-validation.json"
+  },
+  "cpp_automation": {
+    "succeeded": 9,
+    "succeededWithWarnings": 3,
+    "failed": 0,
+    "notRun": 0
+  },
+  "pie_rules": {
+    "2": {
+      "passed": true,
+      "checks": 114,
+      "runs": [
+        "38BD4AE44D6E0BBF8DC42C9E6169BF5E",
+        "F83DCDDE4D203860269D3CA74D8580C9",
+        "4F6D068F4223AB9C0F1F4DBED00CDDD4",
+        "682C2AE845665C19C898BD9272E8B231",
+        "668E910A437E6BF731479D8E0A653184",
+        "807DA3CB4113B15FC189E195B4353644",
+        "7F4883194447D5F83FE08C84E2383E21",
+        "2020C01742F26BDD422B3992E20A710B",
+        "6EBD1F614F10EF3EAAF8C8B3EB89380C"
+      ],
+      "spawn_capsules": [
+        {
+          "p": [
+            -21040.0,
+            -100.0,
+            308.14999771118164
+          ],
+          "radius": 34.0,
+          "half_height": 96.0
+        },
+        {
+          "p": [
+            -21340.0,
+            100.0,
+            308.1
+          ],
+          "radius": 34.0,
+          "half_height": 96.0
+        }
+      ],
+      "mid_capsules": [
+        [
+          -11800.0,
+          -100.0,
+          308.15
+        ],
+        [
+          -11800.0,
+          100.0,
+          308.15
+        ]
+      ],
+      "final_capsules": [
+        [
+          -950.0,
+          -100.0,
+          308.15
+        ],
+        [
+          -950.0,
+          100.0,
+          308.15
+        ]
+      ],
+      "report": "Saved/Prototype01/p4-pie-2.json"
+    },
+    "4": {
+      "passed": true,
+      "checks": 121,
+      "runs": [
+        "9C3C47964308CFB00F1FC595721D5798",
+        "0C2C834C4DCCD754F6B47487DF4C5A65",
+        "4B1EA88A4CA07DAD25A7D8B389FBE934",
+        "525D09AA48ACA6966884FBA66C98CD70",
+        "6DBA13E34FA553F68E36AC8EF96B4C97",
+        "FED577414764A25D3D7A49A628A1D970",
+        "FB4BE86B40F4AB1B6E5E56BAFD604B5F",
+        "CAA5D9D74C19AB57090BB2B51741BF20",
+        "E04729D44A9D79D40DC165B14E710C44"
+      ],
+      "spawn_capsules": [
+        {
+          "p": [
+            -21340.0,
+            100.0,
+            308.14999771118164
+          ],
+          "radius": 34.0,
+          "half_height": 96.0
+        },
+        {
+          "p": [
+            -21040.0,
+            100.0,
+            308.1
+          ],
+          "radius": 34.0,
+          "half_height": 96.0
+        },
+        {
+          "p": [
+            -21040.0,
+            -100.0,
+            308.1
+          ],
+          "radius": 34.0,
+          "half_height": 96.0
+        },
+        {
+          "p": [
+            -21340.0,
+            -100.0,
+            308.1
+          ],
+          "radius": 34.0,
+          "half_height": 96.0
+        }
+      ],
+      "mid_capsules": [
+        [
+          -11800.0,
+          -100.0,
+          308.15
+        ],
+        [
+          -11800.0,
+          100.0,
+          308.15
+        ],
+        [
+          -11600.0,
+          -100.0,
+          308.15
+        ],
+        [
+          -11600.0,
+          100.0,
+          308.15
+        ]
+      ],
+      "final_capsules": [
+        [
+          -950.0,
+          -100.0,
+          308.15
+        ],
+        [
+          -950.0,
+          100.0,
+          308.15
+        ],
+        [
+          -750.0,
+          -100.0,
+          308.15
+        ],
+        [
+          -750.0,
+          100.0,
+          308.15
+        ]
+      ],
+      "report": "Saved/Prototype01/p4-pie-4.json"
+    }
+  },
+  "continuous_input_play": {
+    "2": {
+      "method": "Continuous Enhanced Input after spawn; no position/time/damage/score fixtures",
+      "elapsed_seconds": 79.2076775059104,
+      "run_id": "3016D8BE4D2A7AC02CCD26AC2123DB8A",
+      "mission_consumed_seconds": 73.20638300850987,
+      "wounds": [
+        20.0,
+        20.0
+      ],
+      "travel_times": [
+        {
+          "stage": "C01 supply approach",
+          "seconds": 1.086591698229313
+        },
+        {
+          "stage": "C01 to C03 walking laser bypass",
+          "seconds": 10.37242479994893
+        },
+        {
+          "stage": "Cooperative panel approach",
+          "seconds": 2.938375398516655
+        },
+        {
+          "stage": "C04 ground route to C05 maintenance",
+          "seconds": 7.45261700078845
+        },
+        {
+          "stage": "C06 camera cover path closes maintenance",
+          "seconds": 10.284775596112013
+        },
+        {
+          "stage": "C07 cargo / C08 ground / C09 opposite safe path / engine entry",
+          "seconds": 20.598428208380938
+        },
+        {
+          "stage": "Four capsule positions in final exit",
+          "seconds": 2.1565313935279846
+        }
+      ],
+      "cargo_left_reason": "통과성 검사 정책: 첫 보급 40만 확보하고 두 S01의 무중력/높은 선반과 나머지 화물은 남겼다. 정비에서 2초 합류 후 최종 기관실까지 전진했다. 사람의 선택/재미 평가가 아니다.",
+      "checks": 18,
+      "passed": true,
+      "escaped": 2,
+      "left_behind": 0,
+      "final_value": 40,
+      "RunEnd": 1,
+      "CargoTransferred": 1,
+      "report": "Saved/Prototype01/p4-playthrough-2.json"
+    },
+    "4": {
+      "method": "Continuous Enhanced Input after spawn; no position/time/damage/score fixtures",
+      "elapsed_seconds": 80.77873367071152,
+      "run_id": "544B70EA462632883A9463BD2A70DC37",
+      "mission_consumed_seconds": 73.31096002459526,
+      "wounds": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "travel_times": [
+        {
+          "stage": "C01 supply approach",
+          "seconds": 1.7531821131706238
+        },
+        {
+          "stage": "C01 to C03 walking laser bypass",
+          "seconds": 10.920936688780785
+        },
+        {
+          "stage": "Cooperative panel approach",
+          "seconds": 2.9575111865997314
+        },
+        {
+          "stage": "C04 ground route to C05 maintenance",
+          "seconds": 8.727710902690887
+        },
+        {
+          "stage": "C06 camera cover path closes maintenance",
+          "seconds": 11.217252627015114
+        },
+        {
+          "stage": "C07 cargo / C08 ground / C09 opposite safe path / engine entry",
+          "seconds": 17.304341733455658
+        },
+        {
+          "stage": "Four capsule positions in final exit",
+          "seconds": 2.2536689937114716
+        }
+      ],
+      "cargo_left_reason": "통과성 검사 정책: 첫 보급 40만 확보하고 두 S01의 무중력/높은 선반과 나머지 화물은 남겼다. 정비에서 2초 합류 후 최종 기관실까지 전진했다. 사람의 선택/재미 평가가 아니다.",
+      "checks": 18,
+      "passed": true,
+      "escaped": 4,
+      "left_behind": 0,
+      "final_value": 40,
+      "RunEnd": 1,
+      "CargoTransferred": 1,
+      "report": "Saved/Prototype01/p4-playthrough-4.json"
+    }
+  },
+  "server_ledger_audit": {
+    "2": {
+      "checks": 114,
+      "passed": true,
+      "runs": [
+        {
+          "RunId": "38BD4AE44D6E0BBF8DC42C9E6169BF5E",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 1,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 40,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 2
+            }
+          ]
+        },
+        {
+          "RunId": "F83DCDDE4D203860269D3CA74D8580C9",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 1,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 40,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 2
+            }
+          ]
+        },
+        {
+          "RunId": "4F6D068F4223AB9C0F1F4DBED00CDDD4",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 2
+            }
+          ]
+        },
+        {
+          "RunId": "682C2AE845665C19C898BD9272E8B231",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 2
+            }
+          ]
+        },
+        {
+          "RunId": "668E910A437E6BF731479D8E0A653184",
+          "RunEnd": 1,
+          "ExtractionStart": 1,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Succeeded",
+              "reason": "Departed",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "P01_C05_Mid",
+              "escaped": 2,
+              "leftBehind": 0
+            }
+          ]
+        },
+        {
+          "RunId": "807DA3CB4113B15FC189E195B4353644",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 2
+            }
+          ]
+        },
+        {
+          "RunId": "7F4883194447D5F83FE08C84E2383E21",
+          "RunEnd": 1,
+          "ExtractionStart": 1,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "P01_C10_Final",
+              "escaped": 0,
+              "leftBehind": 2
+            }
+          ]
+        },
+        {
+          "RunId": "2020C01742F26BDD422B3992E20A710B",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 2
+            }
+          ]
+        },
+        {
+          "RunId": "6EBD1F614F10EF3EAAF8C8B3EB89380C",
+          "RunEnd": 1,
+          "ExtractionStart": 1,
+          "MaintenanceStart": 0,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "EmptyExtraction",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "P01_C10_Final",
+              "escaped": 0,
+              "leftBehind": 2
+            }
+          ]
+        }
+      ]
+    },
+    "4": {
+      "checks": 121,
+      "passed": true,
+      "runs": [
+        {
+          "RunId": "9C3C47964308CFB00F1FC595721D5798",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 2,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 40,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 4
+            }
+          ]
+        },
+        {
+          "RunId": "0C2C834C4DCCD754F6B47487DF4C5A65",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 2,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 40,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 4
+            }
+          ]
+        },
+        {
+          "RunId": "4B1EA88A4CA07DAD25A7D8B389FBE934",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 4
+            }
+          ]
+        },
+        {
+          "RunId": "525D09AA48ACA6966884FBA66C98CD70",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 4
+            }
+          ]
+        },
+        {
+          "RunId": "6DBA13E34FA553F68E36AC8EF96B4C97",
+          "RunEnd": 1,
+          "ExtractionStart": 1,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Succeeded",
+              "reason": "Departed",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "P01_C05_Mid",
+              "escaped": 4,
+              "leftBehind": 0
+            }
+          ]
+        },
+        {
+          "RunId": "FED577414764A25D3D7A49A628A1D970",
+          "RunEnd": 1,
+          "ExtractionStart": 1,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "P01_C10_Final",
+              "escaped": 0,
+              "leftBehind": 4
+            }
+          ]
+        },
+        {
+          "RunId": "FB4BE86B40F4AB1B6E5E56BAFD604B5F",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 1,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 4
+            }
+          ]
+        },
+        {
+          "RunId": "CAA5D9D74C19AB57090BB2B51741BF20",
+          "RunEnd": 1,
+          "ExtractionStart": 1,
+          "MaintenanceStart": 0,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "EmptyExtraction",
+              "value": 0,
+              "teamValue": 0,
+              "departureId": "P01_C10_Final",
+              "escaped": 0,
+              "leftBehind": 4
+            }
+          ]
+        },
+        {
+          "RunId": "E04729D44A9D79D40DC165B14E710C44",
+          "RunEnd": 1,
+          "ExtractionStart": 0,
+          "MaintenanceStart": 0,
+          "Revive": 0,
+          "duplicate_transfers": 0,
+          "result": [
+            {
+              "phase": "Failed",
+              "reason": "MissionExpired",
+              "value": 0,
+              "teamValue": 700,
+              "departureId": "None",
+              "escaped": 0,
+              "leftBehind": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "method": {
+    "environment": "Windows, single-process Listen Server PIE with one or three clients",
+    "network_emulation": "Explicitly OFF for P4",
+    "rules_fixtures": "Position, authoritative damage and exact deadline alignment only; Enhanced Input and owned Pawn RPC perform requests. No direct completion, score or revive writes.",
+    "two_player_suite": "Resumed after aim-settle fixture correction; 9 Guid values corrected using authoritative JSONL, not object memory strings.",
+    "four_player_suite": "Reexecuted in full after waiting for dropped physics cargo to settle before taking reference position.",
+    "continuous_play": "No position/time/damage/score fixtures after spawn; first supply only, grounded route through both S01 cars. Automated play, not a human fun evaluation."
+  },
+  "fixes_found_by_validation": [
+    "Mid terminal mesh assigned explicitly in map/setup.",
+    "Consist remains at origin; floor/region centers match all ten cars.",
+    "Final 2m approach marker aligned with protection volume.",
+    "C02/C09 safe walking lanes and C06 cover route cleared by moving new alloy cargo inward.",
+    "Harness uses local replicated carry fixture actor for client RPC and allows aim/drop settling. Prior failures retained in Saved."
+  ],
+  "preservation": {
+    "branch": "feature/teststage",
+    "head": "f2a62353815b1290279cf08d237f46a4df608312",
+    "original_count": 1724,
+    "original_changed": [],
+    "common_source_changed": [],
+    "baseline_changed": [
+      "Source/SpacePirate/Prototype01/SP1ExtractionZone.cpp",
+      "Source/SpacePirate/Prototype01/SP1ExtractionZone.h",
+      "Source/SpacePirate/Prototype01/SP1HUDWidget.cpp",
+      "Source/SpacePirate/Prototype01/SP1InteractionComponent.cpp",
+      "Source/SpacePirate/Prototype01/SP1RoundComponent.cpp",
+      "Source/SpacePirate/Prototype01/SP1RoundComponent.h",
+      "Source/SpacePirate/Prototype01/SP1RunRules.h",
+      "Source/SpacePirate/Prototype01/SP1SecurityCamera.cpp",
+      "Source/SpacePirate/Prototype01/SP1SurvivalComponent.cpp",
+      "Source/SpacePirate/Prototype01/SP1SurvivalComponent.h",
+      "Source/SpacePirate/Prototype01/SP1Types.h",
+      "Source/SpacePirate/Prototype01/Tests/SP1PIETestLibrary.cpp",
+      "Source/SpacePirate/Prototype01/Tests/SP1PIETestLibrary.h",
+      "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GameState.uasset",
+      "Content/SpacePirate/Prototype01/Data/DA_SP1S01.uasset",
+      "Content/SpacePirate/Prototype01/UI/WBP_SP1HUD.uasset",
+      "Docs/Prototypes/Plan01/implementation-status.md",
+      "Content/SpacePirate/Maps/Lvl_SPPrototype01.umap"
+    ],
+    "prior_untracked_count": 3049,
+    "prior_untracked_missing": []
+  },
+  "lfs_locks": {
+    "owner": "bizet12",
+    "retained_prior": 22,
+    "new": 5,
+    "total": 27,
+    "foreign_unlocks": 0
+  },
+  "known_limitations": [
+    "Four-window PIE on RTX 3060 Ti reproduces texture streaming and video memory budget warnings.",
+    "P3 transient gravity boundary corrections are not claimed resolved by P4.",
+    "Engine room is an existing Long car with labels and final prototype layout."
+  ],
+  "not_performed": [
+    "P4 additional artificial latency/loss scenarios",
+    "Actual remote disconnect followed by maintenance revive (disconnected eligibility covered by native unit test)",
+    "Separate-process or separate-PC multiplayer and packaging",
+    "Human fun/readability evaluation and sound listening"
+  ],
+  "screenshots": [
+    "Saved/Prototype01/p4-two-player-result.jpg",
+    "Saved/Prototype01/p4-four-player-ready.jpg",
+    "Saved/Prototype01/p4-four-player-result.jpg"
+  ],
+  "editor_final_state": {
+    "dirty_maps": [],
+    "dirty_content": [],
+    "pie_worlds": 0,
+    "editor_world": "/Game/SpacePirate/Maps/Lvl_SPPrototype01.Lvl_SPPrototype01",
+    "play": {
+      "PlayNumberOfClients": "1",
+      "RunUnderOneProcess": "True",
+      "NewWindowWidth": "1280",
+      "NewWindowHeight": "720"
+    },
+    "bThrottleCPUWhenNotForeground": true,
+    "network_emulation_reset": true,
+    "mcp_stop_requested": true,
+    "python_remote_execution": false
+  },
+  "mcp_route_final_http_status": 404,
+  "committed": false,
+  "pushed": false
+}

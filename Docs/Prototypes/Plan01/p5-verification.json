@@ -1,0 +1,1430 @@
+{
+  "date": "2026-10-01",
+  "author": "임진혁",
+  "stage": "P5",
+  "implementation": "Implemented with local verification; human listening, independent usability and exact full-screen/remote-machine acceptance remain unverified",
+  "engine": "5.8.2-56702186+++UE5+Release-5.8",
+  "branch": "feature/teststage",
+  "head": "f2a62353815b1290279cf08d237f46a4df608312",
+  "map": "/Game/SpacePirate/Maps/Lvl_SPPrototype01",
+  "final_build_id": "f2a6235+P5-d67d1894f0fb",
+  "settings_version": "Plan01-P05.1",
+  "layout_variant": "A",
+  "build": {
+    "target": "SpacePirateEditor Development Win64",
+    "result": "Succeeded",
+    "log": "Saved/Prototype01/p5-build-final.log",
+    "project_files": "Saved/Prototype01/p5-projectfiles.log"
+  },
+  "native_automation": {
+    "succeeded": 9,
+    "succeededWithWarnings": 3,
+    "failed": 0,
+    "notRun": 0
+  },
+  "original_train_validation": {
+    "passed": true,
+    "assets": 110,
+    "blueprints": 37,
+    "dependency_packages": 285
+  },
+  "prototype_validation": {
+    "passed": true,
+    "blueprints": 14,
+    "dependency_packages": 424,
+    "actors": 144,
+    "missing_dependencies": [],
+    "budget": {
+      "normal": 40,
+      "special": 2,
+      "value": 7060,
+      "rows": [
+        {
+          "car": "P01_C01",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Supply.DA_SP1Supply",
+          "special": false,
+          "count": 4
+        },
+        {
+          "car": "P01_C02",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C02",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Alloy.DA_SP1Alloy",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C06",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C04",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1S01.DA_SP1S01",
+          "special": true,
+          "count": 1
+        },
+        {
+          "car": "P01_C04",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C03",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 4
+        },
+        {
+          "car": "P01_C04",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C06",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Alloy.DA_SP1Alloy",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C07",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 6
+        },
+        {
+          "car": "P01_C07",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Alloy.DA_SP1Alloy",
+          "special": false,
+          "count": 4
+        },
+        {
+          "car": "P01_C08",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C08",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Parts.DA_SP1Parts",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C08",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1S01.DA_SP1S01",
+          "special": true,
+          "count": 1
+        },
+        {
+          "car": "P01_C09",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C09",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Alloy.DA_SP1Alloy",
+          "special": false,
+          "count": 2
+        },
+        {
+          "car": "P01_C10",
+          "definition": "/Game/SpacePirate/Prototype01/Data/DA_SP1Core.DA_SP1Core",
+          "special": false,
+          "count": 2
+        }
+      ]
+    }
+  },
+  "presentation_assets": {
+    "icons": {
+      "Supply": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1Supply.T_SP1Supply",
+      "Parts": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1Parts.T_SP1Parts",
+      "Alloy": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1Alloy.T_SP1Alloy",
+      "Core": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1Core.T_SP1Core",
+      "S01": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1S01.T_SP1S01",
+      "PingLocation": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1PingLocation.T_SP1PingLocation",
+      "PingCargo": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1PingCargo.T_SP1PingCargo",
+      "PingDanger": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1PingDanger.T_SP1PingDanger"
+    },
+    "definitions": {
+      "Supply": {
+        "mesh": "/Game/Assets/Cargo/SciFi_Props/Models/SM_Box_4.SM_Box_4",
+        "icon": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1Supply.T_SP1Supply",
+        "value": 40,
+        "hold_seconds": 0.800000011920929
+      },
+      "Parts": {
+        "mesh": "/Game/Assets/Cargo/SciFi_Props/Models/SM_Box_3.SM_Box_3",
+        "icon": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1Parts.T_SP1Parts",
+        "value": 100,
+        "hold_seconds": 1.2000000476837158
+      },
+      "Alloy": {
+        "mesh": "/Game/Assets/Cargo/SciFi_Props/Models/SM_Box_1.SM_Box_1",
+        "icon": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1Alloy.T_SP1Alloy",
+        "value": 160,
+        "hold_seconds": 2.5
+      },
+      "Core": {
+        "mesh": "/Game/Assets/Cargo/SciFi_Props/Models/SM_Box_8.SM_Box_8",
+        "icon": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1Core.T_SP1Core",
+        "value": 300,
+        "hold_seconds": 2.0
+      },
+      "S01": {
+        "mesh": "/Game/Assets/Cargo/SciFi_Props/Models/SM_Box_7.SM_Box_7",
+        "icon": "/Game/SpacePirate/Prototype01/UI/Icons/T_SP1S01.T_SP1S01",
+        "value": 350,
+        "hold_seconds": 3.0
+      }
+    },
+    "audio": {
+      "AcquireStart": {
+        "path": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Futuristic_Click_01_wav_Cue",
+        "duration": 1.8494558334350586,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/InterfaceAndItemSounds/WAV/Futuristic_Click_01_wav.Futuristic_Click_01_wav",
+            "duration": 1.8494558334350586,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "Cancel": {
+        "path": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Back_Click_01_wav_Cue",
+        "duration": 1.2223129272460938,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/InterfaceAndItemSounds/WAV/Back_Click_01_wav.Back_Click_01_wav",
+            "duration": 1.2223129272460938,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "Success": {
+        "path": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Special_Musical_01_wav_Cue",
+        "duration": 2.1105895042419434,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/InterfaceAndItemSounds/WAV/Special_Musical_01_wav.Special_Musical_01_wav",
+            "duration": 2.1105895042419434,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "Failure": {
+        "path": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Error_Buzz_01_wav_Cue",
+        "duration": 1.8595011234283447,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/InterfaceAndItemSounds/WAV/Error_Buzz_01_wav.Error_Buzz_01_wav",
+            "duration": 1.8595011234283447,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "S01Warning": {
+        "path": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Special_Powerup_02_wav_Cue",
+        "duration": 1.9901814460754395,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/InterfaceAndItemSounds/WAV/Special_Powerup_02_wav.Special_Powerup_02_wav",
+            "duration": 1.9901814460754395,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "Time60": {
+        "path": "/Game/Assets/Sound/SciFiUISFX/Cues/Rings/Ring_Pitched_Down_Cue",
+        "duration": 0.6893333196640015,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/SciFiUISFX/Wavs/Rings/Ring_Pitched_Down_Wav.Ring_Pitched_Down_Wav",
+            "duration": 0.6893333196640015,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "Time30": {
+        "path": "/Game/Assets/Sound/SciFiUISFX/Cues/Tone1/Tritone/Tone1A_TritoneUp_Cue",
+        "duration": 1.0,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/SciFiUISFX/Wavs/Tone1/Tritone/Tone1A_TritoneUp_Wav.Tone1A_TritoneUp_Wav",
+            "duration": 1.0,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "Departure": {
+        "path": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Special_Powerup_01_wav_Cue",
+        "duration": 2.966303825378418,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/InterfaceAndItemSounds/WAV/Special_Powerup_01_wav.Special_Powerup_01_wav",
+            "duration": 2.966303825378418,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "Countdown": {
+        "path": "/Game/Assets/Sound/SciFiUISFX/Cues/Clicks/High_Click_1_Cue",
+        "duration": 0.6893333196640015,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/SciFiUISFX/Wavs/Clicks/High_Click_1_Wav.High_Click_1_Wav",
+            "duration": 0.6893333196640015,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "Transfer": {
+        "path": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Item_Sell_Purchase_01_wav_Cue",
+        "duration": 1.0716552734375,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/InterfaceAndItemSounds/WAV/Item_Sell_Purchase_01_wav.Item_Sell_Purchase_01_wav",
+            "duration": 1.0716552734375,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "GravityComplete": {
+        "path": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Special_Powerup_03_wav_Cue",
+        "duration": 2.0411791801452637,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/InterfaceAndItemSounds/WAV/Special_Powerup_03_wav.Special_Powerup_03_wav",
+            "duration": 2.0411791801452637,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      },
+      "CameraWarning": {
+        "path": "/Game/Assets/Sound/InterfaceAndItemSounds/Cues/Futuristic_Alarm_01_wav_Cue",
+        "duration": 10.971428871154785,
+        "nodes": [
+          "SoundNodeWavePlayer"
+        ],
+        "waves": [
+          {
+            "path": "/Game/Assets/Sound/InterfaceAndItemSounds/WAV/Futuristic_Alarm_01_wav.Futuristic_Alarm_01_wav",
+            "duration": 10.971428871154785,
+            "channels": 2
+          }
+        ],
+        "listening_evaluation": "not performed by audio-aware observer"
+      }
+    },
+    "engine": "5.8.2-56702186+++UE5+Release-5.8",
+    "build_id": "f2a6235+P5-d67d1894f0fb"
+  },
+  "two_player_pie": {
+    "passed": true,
+    "players": 2,
+    "checks": [
+      {
+        "check": "Ready screens in all worlds",
+        "passed": true,
+        "t": 6.15710112452507
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 8.190583419054747,
+        "reason": ""
+      },
+      {
+        "check": "Four/two participant rows and current car",
+        "passed": true,
+        "t": 8.69980151951313
+      },
+      {
+        "check": "All owned pings match exact fixed points in every world",
+        "passed": true,
+        "t": 10.016330920159817
+      },
+      {
+        "check": "First visible cargo surface classified",
+        "passed": true,
+        "t": 10.016330920159817
+      },
+      {
+        "check": "One second server cooldown rejects repeated request",
+        "passed": true,
+        "t": 10.2854433208704
+      },
+      {
+        "check": "Per-player cap replaces oldest ping",
+        "passed": true,
+        "t": 12.391087520867586
+      },
+      {
+        "check": "Ping remains at world point after requester movement",
+        "passed": true,
+        "t": 12.796853318810463
+      },
+      {
+        "check": "Eight second ping expiry on all worlds",
+        "passed": true,
+        "t": 21.103576317429543
+      },
+      {
+        "check": "Occluding wall receives location ping",
+        "passed": true,
+        "t": 22.227750215679407
+      },
+      {
+        "check": "No ping when no surface exists within thirty metres",
+        "passed": true,
+        "t": 24.16314321756363
+      },
+      {
+        "check": "Normal transfer value replicated to all HUDs",
+        "passed": true,
+        "t": 26.981191016733646
+      },
+      {
+        "check": "Distinct S01 preview and cancel events",
+        "passed": true,
+        "t": 28.5882779173553
+      },
+      {
+        "check": "S01 and normal total 390 in all worlds",
+        "passed": true,
+        "t": 33.0117718167603
+      },
+      {
+        "check": "S01 result remains visible",
+        "passed": true,
+        "t": 33.0117718167603
+      },
+      {
+        "check": "60 second visual and cue on every screen",
+        "passed": true,
+        "t": 34.04540101066232
+      },
+      {
+        "check": "Muted warning stays readable without creating audio",
+        "passed": true,
+        "t": 34.676545813679695
+      },
+      {
+        "check": "Time warnings do not repeat every tick",
+        "passed": true,
+        "t": 35.396348014473915
+      },
+      {
+        "check": "Departure place / living / aboard HUD",
+        "passed": true,
+        "t": 38.13372431695461
+      },
+      {
+        "check": "Successful settlement and every player aboard",
+        "passed": true,
+        "t": 47.94489021599293
+      },
+      {
+        "check": "Departure / final five ticks / result cue exactly once",
+        "passed": true,
+        "t": 47.94489021599293
+      },
+      {
+        "check": "Success result screen matches server",
+        "passed": true,
+        "t": 47.94489021599293
+      },
+      {
+        "check": "Terminal result clears pings",
+        "passed": true,
+        "t": 47.94489021599293
+      },
+      {
+        "check": "First restart clears UI sound history",
+        "passed": true,
+        "t": 49.457774721086025
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 51.47347840294242,
+        "reason": ""
+      },
+      {
+        "check": "repeat 0 failure reason on every screen",
+        "passed": true,
+        "t": 52.78443171083927,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 2명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 0 replicated round reset",
+        "passed": true,
+        "t": 56.598869912326336
+      },
+      {
+        "check": "repeat 0 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 56.598869912326336
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 58.61337611824274,
+        "reason": ""
+      },
+      {
+        "check": "repeat 1 failure reason on every screen",
+        "passed": true,
+        "t": 59.94342762976885,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 2명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 1 replicated round reset",
+        "passed": true,
+        "t": 63.74996193125844
+      },
+      {
+        "check": "repeat 1 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 63.74996193125844
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 65.78287053108215,
+        "reason": ""
+      },
+      {
+        "check": "repeat 2 failure reason on every screen",
+        "passed": true,
+        "t": 67.10870063304901,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 2명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 2 replicated round reset",
+        "passed": true,
+        "t": 70.93602283298969
+      },
+      {
+        "check": "repeat 2 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 70.93602283298969
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 72.95888883247972,
+        "reason": ""
+      },
+      {
+        "check": "repeat 3 failure reason on every screen",
+        "passed": true,
+        "t": 74.28140053525567,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 2명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 3 replicated round reset",
+        "passed": true,
+        "t": 78.11862533539534
+      },
+      {
+        "check": "repeat 3 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 78.11862533539534
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 80.1466210372746,
+        "reason": ""
+      },
+      {
+        "check": "Spectator input blocked with explicit message",
+        "passed": true,
+        "t": 81.47993333637714
+      },
+      {
+        "check": "repeat 4 failure reason on every screen",
+        "passed": true,
+        "t": 82.29293613508344,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 2명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 4 replicated round reset",
+        "passed": true,
+        "t": 86.0978388376534
+      },
+      {
+        "check": "repeat 4 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 86.0978388376534
+      },
+      {
+        "check": "Six unique completed RunIds",
+        "passed": true,
+        "t": 86.0978388376534
+      }
+    ],
+    "runs": [
+      "C42BC9094B78FF8C0AD2ECA7E0B89B7E",
+      "EA3670534F9D02B3F2C6F09F1A5BA401",
+      "D0ACE4804E90CD2A76286FB5DFDF4D4A",
+      "E17030BE4EB941E952CF64AAFFE361F0",
+      "9C33B0DC4FEE9EAD4AEF4B87062F2E7C",
+      "41DBD0AD4F4AB2F4FA89B59DDDB9289B"
+    ],
+    "method": "4/2 local PIE worlds; owned RPC + Enhanced Input, position/time fixtures",
+    "current_stage": "restart repeat 4"
+  },
+  "four_player_pie": {
+    "passed": true,
+    "players": 4,
+    "checks": [
+      {
+        "check": "Ready screens in all worlds",
+        "passed": true,
+        "t": 6.676700122654438
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 8.786431528627872,
+        "reason": ""
+      },
+      {
+        "check": "Four/two participant rows and current car",
+        "passed": true,
+        "t": 9.308544926345348
+      },
+      {
+        "check": "All owned pings match exact fixed points in every world",
+        "passed": true,
+        "t": 10.864238418638706
+      },
+      {
+        "check": "First visible cargo surface classified",
+        "passed": true,
+        "t": 10.864238418638706
+      },
+      {
+        "check": "One second server cooldown rejects repeated request",
+        "passed": true,
+        "t": 11.221804924309254
+      },
+      {
+        "check": "Per-player cap replaces oldest ping",
+        "passed": true,
+        "t": 13.470800139009953
+      },
+      {
+        "check": "Ping remains at world point after requester movement",
+        "passed": true,
+        "t": 13.980551429092884
+      },
+      {
+        "check": "Eight second ping expiry on all worlds",
+        "passed": true,
+        "t": 22.435284201055765
+      },
+      {
+        "check": "Occluding wall receives location ping",
+        "passed": true,
+        "t": 23.751703295856714
+      },
+      {
+        "check": "No ping when no surface exists within thirty metres",
+        "passed": true,
+        "t": 25.932193476706743
+      },
+      {
+        "check": "Normal transfer value replicated to all HUDs",
+        "passed": true,
+        "t": 29.03960297629237
+      },
+      {
+        "check": "Distinct S01 preview and cancel events",
+        "passed": true,
+        "t": 30.861196998506784
+      },
+      {
+        "check": "S01 and normal total 390 in all worlds",
+        "passed": true,
+        "t": 35.452802304178476
+      },
+      {
+        "check": "S01 result remains visible",
+        "passed": true,
+        "t": 35.452802304178476
+      },
+      {
+        "check": "60 second visual and cue on every screen",
+        "passed": true,
+        "t": 36.66778200119734
+      },
+      {
+        "check": "Muted warning stays readable without creating audio",
+        "passed": true,
+        "t": 37.44720710068941
+      },
+      {
+        "check": "Time warnings do not repeat every tick",
+        "passed": true,
+        "t": 38.2667642980814
+      },
+      {
+        "check": "Departure place / living / aboard HUD",
+        "passed": true,
+        "t": 41.12524762749672
+      },
+      {
+        "check": "Successful settlement and every player aboard",
+        "passed": true,
+        "t": 51.09905916079879
+      },
+      {
+        "check": "Departure / final five ticks / result cue exactly once",
+        "passed": true,
+        "t": 51.09905916079879
+      },
+      {
+        "check": "Success result screen matches server",
+        "passed": true,
+        "t": 51.09905916079879
+      },
+      {
+        "check": "Terminal result clears pings",
+        "passed": true,
+        "t": 51.09905916079879
+      },
+      {
+        "check": "First restart clears UI sound history",
+        "passed": true,
+        "t": 52.7004379555583
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 54.83054614812136,
+        "reason": ""
+      },
+      {
+        "check": "repeat 0 failure reason on every screen",
+        "passed": true,
+        "t": 56.227558232843876,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 4명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 0 replicated round reset",
+        "passed": true,
+        "t": 60.22703539580107
+      },
+      {
+        "check": "repeat 0 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 60.22703539580107
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 62.32736807316542,
+        "reason": ""
+      },
+      {
+        "check": "repeat 1 failure reason on every screen",
+        "passed": true,
+        "t": 63.71353716403246,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 4명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 1 replicated round reset",
+        "passed": true,
+        "t": 67.69210229068995
+      },
+      {
+        "check": "repeat 1 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 67.69210229068995
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 69.78632438927889,
+        "reason": ""
+      },
+      {
+        "check": "repeat 2 failure reason on every screen",
+        "passed": true,
+        "t": 71.16457328945398,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 4명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 2 replicated round reset",
+        "passed": true,
+        "t": 75.10953898727894
+      },
+      {
+        "check": "repeat 2 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 75.10953898727894
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 77.17323258519173,
+        "reason": ""
+      },
+      {
+        "check": "repeat 3 failure reason on every screen",
+        "passed": true,
+        "t": 78.55847810208797,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 4명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 3 replicated round reset",
+        "passed": true,
+        "t": 82.5325276851654
+      },
+      {
+        "check": "repeat 3 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 82.5325276851654
+      },
+      {
+        "check": "Valid scenario can start",
+        "passed": true,
+        "t": 84.6555597037077,
+        "reason": ""
+      },
+      {
+        "check": "Spectator input blocked with explicit message",
+        "passed": true,
+        "t": 85.99559117853642
+      },
+      {
+        "check": "repeat 4 failure reason on every screen",
+        "passed": true,
+        "t": 86.88253046572208,
+        "body": "임무 시간이 끝났습니다. 출발 중에도 임무 마감이 우선합니다.\n\n출발 장소: 출발하지 않음\n전송 0  /  최종 정산 0\n탈출 0명  /  미탈출 4명\n같은 맵에서 새 라운드를 시작할 수 있습니다."
+      },
+      {
+        "check": "repeat 4 replicated round reset",
+        "passed": true,
+        "t": 90.84574556350708
+      },
+      {
+        "check": "repeat 4 no old HUD audio / one HUD per world",
+        "passed": true,
+        "t": 90.84574556350708
+      },
+      {
+        "check": "Six unique completed RunIds",
+        "passed": true,
+        "t": 90.84574556350708
+      }
+    ],
+    "runs": [
+      "35A1EFC84755E33BEEDA3EBE8C823238",
+      "079A89BA4E40484B1CF5A5A0F984BCFF",
+      "A5709CAA45E2EB425386DCAC3E57BD5B",
+      "0241FEAF405895D3A8FDB6A259014C64",
+      "7A6661794D1AFB2523291397A32B7192",
+      "52D2B07E44DB74573E9B88B38D47B8DC"
+    ],
+    "method": "4/2 local PIE worlds; owned RPC + Enhanced Input, position/time fixtures",
+    "current_stage": "restart repeat 4"
+  },
+  "presentation_pie": {
+    "passed": true,
+    "checks": [
+      {
+        "check": "Material replacement preserves S01 danger / value / duration text",
+        "passed": true,
+        "t": 500.82410043105483
+      },
+      {
+        "check": "Material replacement preserves target icon",
+        "passed": true,
+        "t": 500.82410043105483
+      },
+      {
+        "check": "Swapped-material S01 transfer still authoritative",
+        "passed": true,
+        "t": 510.5763720832765
+      },
+      {
+        "check": "One nearby transfer AudioComponent; other cars attenuated, no duplicates",
+        "passed": true,
+        "t": 510.5763720832765
+      },
+      {
+        "check": "Maintenance eligible count and teammate death visible",
+        "passed": true,
+        "t": 514.8518776856363
+      },
+      {
+        "check": "Revive result updates team display",
+        "passed": true,
+        "t": 519.0133138932288
+      },
+      {
+        "check": "Camera entered product warning",
+        "passed": true,
+        "t": 520.5701589696109
+      },
+      {
+        "check": "One nearby camera warning sound, distant cars attenuated, explicit visual warning",
+        "passed": true,
+        "t": 520.8317243717611
+      },
+      {
+        "check": "Mute immediately stops active world warning audio",
+        "passed": true,
+        "t": 521.0896817706525
+      },
+      {
+        "check": "Camera warning remains visible while muted",
+        "passed": true,
+        "t": 521.0896817706525
+      },
+      {
+        "check": "Empty departure failure explains cause and pays zero",
+        "passed": true,
+        "t": 534.5773061923683
+      },
+      {
+        "check": "Terminal world pings cleared",
+        "passed": true,
+        "t": 534.5773061923683
+      },
+      {
+        "check": "Restart leaves no prototype world/UI sound playing",
+        "passed": true,
+        "t": 538.4584816806018,
+        "active": []
+      }
+    ],
+    "run_id": "A78CE5DD4D3446776AF2BEA54B852FB0",
+    "current_stage": "presentation reset",
+    "transfer_audio_components": [
+      0,
+      1,
+      0,
+      0
+    ],
+    "camera_audio_components": [
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  "disconnect_auto": {
+    "passed": true,
+    "checks": [
+      {
+        "check": "Active run remembered",
+        "passed": true
+      },
+      {
+        "check": "Connection failure has no settlement",
+        "passed": true
+      },
+      {
+        "check": "Exactly one connection-lost screen survives fallback map",
+        "passed": true
+      },
+      {
+        "check": "Actual loading screen rendered during retry",
+        "passed": true
+      },
+      {
+        "check": "New local host clears failure/loading",
+        "passed": true
+      },
+      {
+        "check": "Retry returns to one Ready screen",
+        "passed": true
+      },
+      {
+        "check": "Fresh authoritative prototype round without old value/pings",
+        "passed": true
+      }
+    ],
+    "observed_titles": [
+      "우주 열차 강탈",
+      "임무 실패",
+      "연결 중단 · 정산 없음",
+      "열차 준비 중"
+    ],
+    "run_id": "F0EBC514463D57FF33706591B14FA9BA",
+    "aborted_screen": "연결 중단 · 정산 없음"
+  },
+  "final_manual_recovery": {
+    "passed": true,
+    "checks": [
+      {
+        "check": "Active run remembered",
+        "passed": true
+      },
+      {
+        "check": "Connection failure has no settlement",
+        "passed": true
+      },
+      {
+        "check": "Exactly one connection-lost screen survives fallback map",
+        "passed": true
+      },
+      {
+        "check": "Physical recovery button used without automatic fallback",
+        "passed": true
+      },
+      {
+        "check": "Actual loading screen rendered during retry",
+        "passed": true
+      },
+      {
+        "check": "New local host clears failure/loading",
+        "passed": true
+      },
+      {
+        "check": "Retry returns to one Ready screen",
+        "passed": true
+      },
+      {
+        "check": "Fresh authoritative prototype round without old value/pings",
+        "passed": true
+      }
+    ],
+    "observed_titles": [
+      "우주 열차 강탈",
+      "임무 실패",
+      "연결 중단 · 정산 없음",
+      "열차 준비 중"
+    ],
+    "run_id": "C978B090445A09A49DD9EFA3BEBE72CD",
+    "aborted_screen": "연결 중단 · 정산 없음"
+  },
+  "physical_debug_keys": {
+    "motion_unchanged": true,
+    "sky_unchanged": true,
+    "inputs": [
+      {
+        "id": 256,
+        "reason": "EvaluationDebugBlocked"
+      },
+      {
+        "id": 257,
+        "reason": "EvaluationDebugBlocked"
+      },
+      {
+        "id": 258,
+        "reason": "None"
+      },
+      {
+        "id": 259,
+        "reason": "None"
+      }
+    ],
+    "ping_owners": [
+      257
+    ],
+    "RunId": "3175ABB349F31A8A5B3536A9A8F17ED8"
+  },
+  "log_audit": {
+    "passed": true,
+    "closed_started_runs": 26,
+    "open_started_runs": 0,
+    "phase_counts": {
+      "Failed": 18,
+      "Aborted": 4,
+      "Succeeded": 4
+    },
+    "runs": [
+      {
+        "RunId": "0241FEAF405895D3A8FDB6A259014C64",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "079A89BA4E40484B1CF5A5A0F984BCFF",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "2F6D46654AB2CE9C52E68E85DF45CAC3",
+        "buildId": "f2a6235+P5-6ca68e1341be",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "3175ABB349F31A8A5B3536A9A8F17ED8",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 350,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "3352AA164EF7EEE39D9BF39572044E91",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Aborted",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "35A1EFC84755E33BEEDA3EBE8C823238",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 390,
+        "final_value": 390,
+        "phase": "Succeeded",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "35CC44A14E710C5FF1C03C901CA8A112",
+        "buildId": "f2a6235+P5-6ca68e1341be",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "41DBD0AD4F4AB2F4FA89B59DDDB9289B",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "4E5F6F244FF76BAE2922F5B806A21348",
+        "buildId": "f2a6235+P5-6ca68e1341be",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "4FF51ACA470CE8838ABBA794518D6701",
+        "buildId": "f2a6235+P5-6ca68e1341be",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "52D2B07E44DB74573E9B88B38D47B8DC",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "5A6A8AE64C9FAEDACC18D282C0C21A87",
+        "buildId": "f2a6235+P5-6ca68e1341be",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "7A6661794D1AFB2523291397A32B7192",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "81F5C4A049BAB802B4BA1F843DEC7AF7",
+        "buildId": "f2a6235+P5-6ca68e1341be",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Aborted",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "91526DEC4E5C462B4D2373A029CE67DF",
+        "buildId": "f2a6235+P5-6ca68e1341be",
+        "transmitted_value": 390,
+        "final_value": 390,
+        "phase": "Succeeded",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "9C33B0DC4FEE9EAD4AEF4B87062F2E7C",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "A5709CAA45E2EB425386DCAC3E57BD5B",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "A78CE5DD4D3446776AF2BEA54B852FB0",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 350,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "B90BEE524DA79FB80238178DDB3E871D",
+        "buildId": "f2a6235+P5-6ca68e1341be",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "C42BC9094B78FF8C0AD2ECA7E0B89B7E",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 390,
+        "final_value": 390,
+        "phase": "Succeeded",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "C7F9D9404A52E1E27AD28FB081515B01",
+        "buildId": "f2a6235+P5-6ca68e1341be",
+        "transmitted_value": 390,
+        "final_value": 390,
+        "phase": "Succeeded",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "C978B090445A09A49DD9EFA3BEBE72CD",
+        "buildId": "f2a6235+P5-d67d1894f0fb",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Aborted",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "D0ACE4804E90CD2A76286FB5DFDF4D4A",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "E17030BE4EB941E952CF64AAFFE361F0",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "EA3670534F9D02B3F2C6F09F1A5BA401",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Failed",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "RunId": "F0EBC514463D57FF33706591B14FA9BA",
+        "buildId": "f2a6235+P5-12fd66e37328",
+        "transmitted_value": 0,
+        "final_value": 0,
+        "phase": "Aborted",
+        "passed": true,
+        "errors": []
+      }
+    ]
+  },
+  "auditor_regression_tests": {
+    "passed": 7,
+    "failed": 0
+  },
+  "preservation": {
+    "baseline_files": 169,
+    "changed_since_p4": [
+      "Source/SpacePirate/Prototype01/SP1CargoDefinition.h",
+      "Source/SpacePirate/Prototype01/SP1HUDWidget.cpp",
+      "Source/SpacePirate/Prototype01/SP1HUDWidget.h",
+      "Source/SpacePirate/Prototype01/SP1InteractionComponent.cpp",
+      "Source/SpacePirate/Prototype01/SP1InteractionComponent.h",
+      "Source/SpacePirate/Prototype01/SP1LaserHazard.cpp",
+      "Source/SpacePirate/Prototype01/SP1RoundComponent.cpp",
+      "Source/SpacePirate/Prototype01/SP1RoundComponent.h",
+      "Source/SpacePirate/Prototype01/SP1SecurityCamera.cpp",
+      "Source/SpacePirate/Prototype01/SP1SessionSubsystem.cpp",
+      "Source/SpacePirate/Prototype01/SP1SessionSubsystem.h",
+      "Source/SpacePirate/Prototype01/SP1TransferCargo.cpp",
+      "Source/SpacePirate/Prototype01/SP1TransferCargo.h",
+      "Source/SpacePirate/Prototype01/SP1Types.h",
+      "Source/SpacePirate/Prototype01/Editor/SP1EditorLibrary.h",
+      "Source/SpacePirate/Prototype01/Tests/SP1PIETestLibrary.cpp",
+      "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GameState.uasset",
+      "Content/SpacePirate/Prototype01/Data/DA_SP1Alloy.uasset",
+      "Content/SpacePirate/Prototype01/Data/DA_SP1Core.uasset",
+      "Content/SpacePirate/Prototype01/Data/DA_SP1Parts.uasset",
+      "Content/SpacePirate/Prototype01/Data/DA_SP1S01.uasset",
+      "Content/SpacePirate/Prototype01/Data/DA_SP1Supply.uasset",
+      "Content/SpacePirate/Prototype01/UI/WBP_SP1HUD.uasset",
+      "Docs/Prototypes/Plan01/implementation-status.md"
+    ],
+    "missing_baseline_files": [],
+    "original_assets_checked": 1724,
+    "changed_original_assets": [],
+    "common_source_changed": [],
+    "prototype_map_unchanged": true,
+    "tracked_diff_unchanged": true
+  },
+  "cleanup": {
+    "dirty_maps": [],
+    "dirty_content": [],
+    "pie_worlds": 0,
+    "editor_world": "/Game/SpacePirate/Maps/Lvl_SPPrototype01.Lvl_SPPrototype01",
+    "play": {
+      "PlayNumberOfClients": "1",
+      "RunUnderOneProcess": "True",
+      "NewWindowWidth": "1280",
+      "NewWindowHeight": "720",
+      "ClientWindowWidth": "640",
+      "ClientWindowHeight": "480"
+    },
+    "bThrottleCPUWhenNotForeground": true,
+    "network_emulation_reset": true,
+    "mcp_stop_requested": true,
+    "python_remote_execution": false,
+    "mcp_http_status": 404,
+    "play_mode_restored_via_mcp": "PIE_Standalone",
+    "screen_percentage_restored": 0,
+    "screen_messages_restored": true
+  },
+  "verification_scope": {
+    "full_pie_build": "f2a6235+P5-12fd66e37328",
+    "native_automation_source_revision": "f2a6235+P5-6ca68e1341be",
+    "final_ui_only_change": "Hide empty survival panel without owning Pawn; Korean timing preset labels. Rebuilt, asset validated, manual recovery retested.",
+    "network_emulation": "Off",
+    "desktop_pixels": [
+      1920,
+      1080
+    ],
+    "measured_large_viewports": [
+      [
+        1920,
+        994
+      ],
+      [
+        1920,
+        1000
+      ]
+    ],
+    "four_player_additional_windows_initially": [
+      640,
+      482
+    ],
+    "temporary_3d_screen_percentage": 50,
+    "screenshots_hide_engine_debug_messages_only_for_readability": true
+  },
+  "not_performed": [
+    "Audio-aware/human listening and fatigue evaluation",
+    "Unguided human understanding of end reasons",
+    "Exact full-screen 1920x1080 viewport / packaged build",
+    "Separate PC clients and P5 lag/loss emulation",
+    "Full general-carry/gravity manual regression outside touched code"
+  ],
+  "reproducible_limits": [
+    "RTX 3060 Ti VRAM/texture budget warnings with multiple PIE windows",
+    "640x480 extra client windows wrap team text and overlap bottom panels; enlarge before evaluation"
+  ]
+}

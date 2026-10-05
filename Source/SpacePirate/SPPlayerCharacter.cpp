@@ -1,4 +1,7 @@
+// 작성자 : 임진혁 (Prototype01 opt-in 연결; 기존 작성자 주석 유지)
 #include "SPPlayerCharacter.h"
+#include "Prototype01/SP1InteractionComponent.h"
+#include "Prototype01/SP1SurvivalComponent.h"
 
 #include "SPCargo.h"
 #include "SPGravitySwitch.h"
@@ -161,11 +164,11 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
     // 인벤토리 입력은 선택 사항이다. 비어 있는 액션의 기능만 꺼지고 이동 입력은 그대로 동작한다.
     if (InteractAction)
     {
-        Input->BindAction(
-            InteractAction,
-            ETriggerEvent::Started,
-            this,
-            &ASPPlayerCharacter::Interact);
+        // 전용 자식 BP의 컴포넌트가 있을 때만 새 경로를 선택한다. E를 두 번 바인딩하지 않는다.
+        if (auto* Prototype = FindComponentByClass<USP1InteractionComponent>())
+            Prototype->BindInput(Input, InteractAction);
+        else
+            Input->BindAction(InteractAction, ETriggerEvent::Started, this, &ASPPlayerCharacter::Interact);
     }
 
     if (DropAction)
@@ -270,6 +273,8 @@ void ASPPlayerCharacter::Look(const FInputActionValue& Value)
 
 void ASPPlayerCharacter::StartJump()
 {
+    if (const auto* Movement = Cast<USPCharacterMovementComponent>(GetCharacterMovement());
+        Movement && Movement->IsInteractionMovementRestricted()) return;
     // 같은 Space 상태를 모드에 따라 점프 또는 지속 추진으로 해석한다.
     bUpThrustHeld = true;
     RefreshZeroGravityInput();
@@ -396,6 +401,8 @@ void ASPPlayerCharacter::Interact()
 
 void ASPPlayerCharacter::DropActiveCargo()
 {
+    if (const auto* Movement = Cast<USPCharacterMovementComponent>(GetCharacterMovement());
+        Movement && Movement->IsInteractionMovementRestricted()) return;
     if (IsCarryingCargo() || Inventory->IsGrippingLarge())
     {
         Inventory->ServerDrop();
@@ -404,6 +411,8 @@ void ASPPlayerCharacter::DropActiveCargo()
 
 void ASPPlayerCharacter::SelectSlot(const FInputActionValue& Value)
 {
+    if (const auto* Movement = Cast<USPCharacterMovementComponent>(GetCharacterMovement());
+        Movement && Movement->IsInteractionMovementRestricted()) return;
     // 숫자키마다 Scalar 모디파이어로 1, 2, 3을 넣어 한 액션으로 받는다.
     Inventory->ServerSelectSlot(
         FMath::RoundToInt(Value.Get<float>()) - 1);
@@ -411,6 +420,8 @@ void ASPPlayerCharacter::SelectSlot(const FInputActionValue& Value)
 
 void ASPPlayerCharacter::CycleSlot(const FInputActionValue& Value)
 {
+    if (const auto* Movement = Cast<USPCharacterMovementComponent>(GetCharacterMovement());
+        Movement && Movement->IsInteractionMovementRestricted()) return;
     const float Axis = Value.Get<float>();
     if (!FMath::IsNearlyZero(Axis))
     {
@@ -610,6 +621,7 @@ ASPGravitySwitch* ASPPlayerCharacter::FindGravitySwitchInView() const
 // 작업자: 김세훈 | [TEMP-GRAVITY-SWITCH] 클라이언트의 대상 포인터를 서버 시선 검사로 검증한다.
 void ASPPlayerCharacter::ServerUseGravitySwitch_Implementation(ASPGravitySwitch* TargetSwitch)
 {
+    if (const auto* Life = FindComponentByClass<USP1SurvivalComponent>(); Life && Life->IsDead()) return;
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
     if (!IsValid(TargetSwitch) || FindGravitySwitchInView() != TargetSwitch)
     {

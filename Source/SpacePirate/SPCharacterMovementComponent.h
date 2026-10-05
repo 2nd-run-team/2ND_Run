@@ -1,3 +1,4 @@
+// 작성자 : 임진혁 (확보 이동 예측 연결; 기존 중력/운반 동작 유지)
 #pragma once
 
 // 역할: 중력/무중력 이동, 충돌 처리, 클라이언트 예측과 서버 보정을 담당한다.
@@ -11,6 +12,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "SPGravityTypes.h"
 #include "SPMovementNetwork.h"
+#include "Prototype01/SP1MovementResponse.h"
 #include "SPCharacterMovementComponent.generated.h"
 
 class ASPCargo;
@@ -80,6 +82,15 @@ public:
     }
 
     virtual float GetMaxSpeed() const override;
+
+    // 확보 입력은 SavedMove의 사용자 비트로 보존한다. 서버는 실제 진행 상태도 함께 제한한다.
+    void SetInteractionMovementRequested(bool bRequested) { bInteractionMovementRequested = bRequested; }
+    bool IsInteractionMovementRequested() const { return bInteractionMovementRequested; }
+    bool IsInteractionMovementRestricted() const;
+    virtual bool CanAttemptJump() const override;
+    bool IsSurvivalMove() const;
+    bool WasStaminaEligible() const { return bStaminaEligibleThisMove; }
+    virtual void ClientHandleMoveResponse(const FCharacterMoveResponseDataContainer& MoveResponse) override;
 
     // 기본 위치 보정에 몸 회전도 포함한다.
     virtual bool ShouldCorrectRotation() const override
@@ -258,8 +269,11 @@ private:
     void MoveZeroGravity(float DeltaTime);
 
     bool bSprintRequested = false;
+    bool bInteractionMovementRequested = false;
     FVector LocalThrustInput = FVector::ZeroVector;
 
     // 엔진이 포인터로 참조하므로 지역 변수가 아닌 컴포넌트 수명의 멤버로 보관한다.
     FSPNetworkMoveDataContainer SPNetworkMoveDataContainer;
+    FSP1MovementResponse SP1MoveResponse;
+    bool bStaminaEligibleThisMove = false;
 };

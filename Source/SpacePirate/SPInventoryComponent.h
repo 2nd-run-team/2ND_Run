@@ -1,3 +1,4 @@
+// 작성자 : 임진혁 (P2 사망 시 서버 소지품 해제 진입점)
 #pragma once
 
 // 역할: 리썰 컴퍼니식 인벤토리(기본 3칸, SlotCount로 조절). 슬롯과 현재 칸을 복제하고, 집기/버리기/전환은 서버에서만 판정한다.
@@ -40,6 +41,8 @@ public:
 
     /** 서버 전용. Large가 이 소유자를 잡는 지점에서 뺄 때 부른다. */
     void OnLargeReleased(const ASPCargo* Cargo);
+    /** 서버 사망 전이 전용. 숨긴 슬롯까지 해제하고, 빈 인벤토리에 재호출해도 화물을 다시 떨어뜨리지 않는다. */
+    void ReleaseAllForDeath();
 
     /** 클라이언트의 사전 확인과 서버 판정이 같은 규칙을 쓴다. */
     bool CanPickUp(const ASPCargo* Cargo) const;

@@ -1,4 +1,7 @@
+// 작성자 : 임진혁 (확보 중 감속·점프 차단의 예측 기록 추가)
 #include "SPCharacterMovementComponent.h"
+#include "Prototype01/SP1InteractionComponent.h"
+#include "Prototype01/SP1SurvivalComponent.h"
 #include "SPCargo.h"
 #include "SPDebug.h"
 #include "SPGravityWorldSubsystem.h"
@@ -32,6 +35,9 @@ public:
     using Super = FSavedMove_Character;
 
     bool bSavedSprintRequested = false;
+    bool bSavedInteractionRequested = false;
+    bool bSavedSurvivalMove = false;
+    bool bSavedStaminaEligible = false;
     bool bSavedCustomGravityMovement = false;
 
     FVector SavedLocalThrustInput = FVector::ZeroVector;
@@ -42,6 +48,9 @@ public:
         Super::Clear();
 
         bSavedSprintRequested = false;
+        bSavedInteractionRequested = false;
+        bSavedSurvivalMove = false;
+        bSavedStaminaEligible = false;
         bSavedCustomGravityMovement = false;
         SavedLocalThrustInput = FVector::ZeroVector;
     }
@@ -56,6 +65,7 @@ public:
             Flags |= FLAG_Custom_0;
         }
 
+        if (bSavedInteractionRequested) Flags |= FLAG_Custom_1;
         return Flags;
     }
 
@@ -69,12 +79,14 @@ public:
 
         // 무중력/복귀 상태의 이동 기록은 합치지 않는다.
         // 몸 회전과 추진 방향을 각 이동 시점에 맞춰 계산한다.
-        if (bSavedCustomGravityMovement || NewSPMove->bSavedCustomGravityMovement)
+        if (bSavedCustomGravityMovement || NewSPMove->bSavedCustomGravityMovement
+            || bSavedSurvivalMove || NewSPMove->bSavedSurvivalMove)
         {
             return false;
         }
 
-        if (bSavedSprintRequested != NewSPMove->bSavedSprintRequested)
+        if (bSavedSprintRequested != NewSPMove->bSavedSprintRequested
+            || bSavedInteractionRequested != NewSPMove->bSavedInteractionRequested)
         {
             return false;
         }
@@ -102,7 +114,8 @@ public:
             static_cast<const FSavedMove_SP*>(LastAckedMove.Get());
 
         // 입력 시작/해제를 중요한 이동으로 표시해 손실된 기록의 재전송 후보에 포함한다.
-        if (bSavedCustomGravityMovement != LastSPMove->bSavedCustomGravityMovement
+        if (bSavedInteractionRequested != LastSPMove->bSavedInteractionRequested
+            || bSavedCustomGravityMovement != LastSPMove->bSavedCustomGravityMovement
             || !SavedLocalThrustInput.Equals(
                 LastSPMove->SavedLocalThrustInput, 0.001f))
         {
@@ -130,10 +143,19 @@ public:
 
         // 이 이동을 시작할 때의 입력을 캡처한다. 완료 후 몸 회전은 부모가 SavedRotation에 저장한다.
         bSavedSprintRequested = Movement->IsSprintRequested();
+        bSavedInteractionRequested = Movement->IsInteractionMovementRequested();
+        bSavedSurvivalMove = Movement->IsSurvivalMove();
         bSavedCustomGravityMovement = Movement->IsCustomGravityMovement();
         SavedLocalThrustInput = Movement->GetZeroGravityInput();
 
-        bForceNoCombine |= bSavedCustomGravityMovement;
+        // 스태미나의 회복 대기/소진 경계를 지나가는 이동은 합쳐 다시 소비하지 않는다.
+        bForceNoCombine |= bSavedCustomGravityMovement || bSavedSurvivalMove;
+    }
+
+    virtual void PostUpdate(ACharacter* Character, EPostUpdateMode Mode) override
+    {
+        Super::PostUpdate(Character, Mode);
+        bSavedStaminaEligible = CastChecked<USPCharacterMovementComponent>(Character->GetCharacterMovement())->WasStaminaEligible();
     }
 
     virtual void PrepMoveFor(ACharacter* Character) override
@@ -145,6 +167,7 @@ public:
                 Character->GetCharacterMovement());
 
         Movement->SetSprintRequested(bSavedSprintRequested);
+        Movement->SetInteractionMovementRequested(bSavedInteractionRequested);
         Movement->SetZeroGravityInput(SavedLocalThrustInput);
 
         // 몸 회전을 과거 클라이언트 값으로 덮어쓰지 않는다.
@@ -229,6 +252,7 @@ USPCharacterMovementComponent::USPCharacterMovementComponent()
 {
     // RPC를 매 프레임 별도로 보내지 않고 엔진 이동 패킷에 추진 입력/몸 회전을 함께 싣는다.
     SetNetworkMoveDataContainer(SPNetworkMoveDataContainer);
+    SetMoveResponseDataContainer(SP1MoveResponse);
 
     // 엔진이 이미 UPROPERTY로 노출한 값의 초기값이다. BP의 Character Movement에서 덮어쓸 수 있다.
     MaxWalkSpeed = 400.0f;
@@ -263,7 +287,11 @@ void USPCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick Ti
 void USPCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
     Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
+    if (const auto* Life = CharacterOwner ? CharacterOwner->FindComponentByClass<USP1SurvivalComponent>() : nullptr;
+        Life && Life->IsDead()) DisableMovement();
     RefreshGravityFromZones();
+    bStaminaEligibleThisMove = bSprintRequested && IsMovingOnGround() && HasForwardAcceleration()
+        && !IsInteractionMovementRestricted() && CharacterOwner && !CharacterOwner->bIsCrouched;
 }
 
 // 작업자: 김세훈 | 조회는 서버 내부 처리이며 상태가 다를 때만 네트워크 전환을 요청한다.
@@ -350,6 +378,10 @@ bool USPCharacterMovementComponent::HasForwardAcceleration() const
 
 float USPCharacterMovementComponent::GetMaxSpeed() const
 {
+    if (const auto* Life = CharacterOwner ? CharacterOwner->FindComponentByClass<USP1SurvivalComponent>() : nullptr;
+        Life && Life->IsDead()) return 0;
+    if (IsInteractionMovementRestricted() && !IsZeroGravity())
+        return FMath::Max(MaxWalkSpeed, 0.0f) * 0.5f * GetCargoSpeedMultiplier();
     if (IsGravityRecovery())
     {
         return FMath::Max(MaxWalkSpeed, 0.0f);
@@ -361,6 +393,47 @@ float USPCharacterMovementComponent::GetMaxSpeed() const
     }
 
     return GetGravityMaxSpeed() * GetCargoSpeedMultiplier();
+}
+
+bool USPCharacterMovementComponent::IsInteractionMovementRestricted() const
+{
+    const auto* Interaction = CharacterOwner ? CharacterOwner->FindComponentByClass<USP1InteractionComponent>() : nullptr;
+    // 공용 맵에는 컴포넌트가 없으므로 기존 이동을 그대로 유지한다.
+    // 악의적인 이동 패킷이 false를 보내도 서버의 활성 확보 제한을 해제할 수 없다.
+    return Interaction && (bInteractionMovementRequested || Interaction->IsServerHolding());
+}
+
+bool USPCharacterMovementComponent::CanAttemptJump() const
+{
+    if (const auto* Life = CharacterOwner ? CharacterOwner->FindComponentByClass<USP1SurvivalComponent>() : nullptr;
+        Life && Life->IsDead()) return false;
+    return !IsInteractionMovementRestricted() && Super::CanAttemptJump();
+}
+
+bool USPCharacterMovementComponent::IsSurvivalMove() const
+{
+    const auto* Life = CharacterOwner ? CharacterOwner->FindComponentByClass<USP1SurvivalComponent>() : nullptr;
+    return Life && Life->IsSimulationEnabled();
+}
+
+void USPCharacterMovementComponent::ClientHandleMoveResponse(const FCharacterMoveResponseDataContainer& Response)
+{
+    Super::ClientHandleMoveResponse(Response);
+    const auto& SurvivalResponse = static_cast<const FSP1MovementResponse&>(Response);
+    auto* Life = CharacterOwner ? CharacterOwner->FindComponentByClass<USP1SurvivalComponent>() : nullptr;
+    auto* Data = GetPredictionData_Client_Character();
+    if (!SurvivalResponse.bHasSurvival || !Life || !Data->LastAckedMove.IsValid()
+        || Data->LastAckedMove->TimeStamp != Response.ClientAdjustment.TimeStamp) return;
+    Life->ReconcileMovement(SurvivalResponse.Stamina, SurvivalResponse.Wounds);
+    // 위치 보정이면 엔진의 이동 재생에서 소비한다. 정상 ACK면 남은 입력의 자원 상태만 재계산한다.
+    // 과거 SavedMove에 저장된 스태미나 숫자를 복원하면 최신 서버 피해가 지워지므로 입력만 재생한다.
+    if (!Data->bUpdatePosition)
+        for (const FSavedMovePtr& Move : Data->SavedMoves)
+        {
+            const auto* Saved = static_cast<const FSavedMove_SP*>(Move.Get());
+            if (Saved->bSavedSurvivalMove)
+                Life->SimulateMovement(Saved->DeltaTime, Saved->bSavedStaminaEligible, Saved->bSavedSprintRequested);
+        }
 }
 
 float USPCharacterMovementComponent::GetCargoSpeedMultiplier() const
@@ -425,6 +498,9 @@ void USPCharacterMovementComponent::OnMovementUpdated(
     Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
 
     ApplyLargeGripLeash();
+    if (CharacterOwner && CharacterOwner->GetLocalRole() != ROLE_SimulatedProxy)
+        if (auto* Life = CharacterOwner->FindComponentByClass<USP1SurvivalComponent>())
+            Life->SimulateMovement(DeltaSeconds, bStaminaEligibleThisMove, bSprintRequested);
 }
 
 void USPCharacterMovementComponent::ApplyLargeGripLeash()
@@ -473,6 +549,8 @@ void USPCharacterMovementComponent::ApplyLargeGripLeash()
 
 float USPCharacterMovementComponent::GetGravityMaxSpeed() const
 {
+    const auto* Life = CharacterOwner ? CharacterOwner->FindComponentByClass<USP1SurvivalComponent>() : nullptr;
+    if (Life && Life->IsDead()) return 0;
     const float EffectiveSprintSpeed =
         FMath::Max(MaxWalkSpeed, SprintSpeed);
 
@@ -483,7 +561,7 @@ float USPCharacterMovementComponent::GetGravityMaxSpeed() const
             return Super::GetMaxSpeed();
         }
 
-        if (bSprintRequested && HasForwardAcceleration())
+        if (bSprintRequested && HasForwardAcceleration() && (!Life || Life->CanSprint()))
         {
             return EffectiveSprintSpeed;
         }
@@ -508,6 +586,7 @@ void USPCharacterMovementComponent::UpdateFromCompressedFlags(
 
     bSprintRequested =
         (Flags & FSavedMove_Character::FLAG_Custom_0) != 0;
+    bInteractionMovementRequested = (Flags & FSavedMove_Character::FLAG_Custom_1) != 0;
 
     if (IsCustomGravityMovement() && CharacterOwner)
     {
@@ -538,12 +617,14 @@ ClientUpdatePositionAfterServerUpdate()
 {
     // Super 안에서 과거 입력을 여러 번 복원한다. 재생 후에는 현재 누른 입력으로 되돌린다.
     const bool bCurrentSprintRequest = bSprintRequested;
+    const bool bCurrentInteractionRequest = bInteractionMovementRequested;
     const FVector CurrentThrustInput = LocalThrustInput;
 
     const bool bUpdated =
         Super::ClientUpdatePositionAfterServerUpdate();
 
     bSprintRequested = bCurrentSprintRequest;
+    bInteractionMovementRequested = bCurrentInteractionRequest;
     LocalThrustInput = CurrentThrustInput;
 
     return bUpdated;
@@ -841,8 +922,9 @@ void USPCharacterMovementComponent::MoveZeroGravity(
     float DeltaTime)
 {
     // 여러 방향 키를 동시에 눌러도 추진력 합계가 커지지 않도록 크기를 1로 제한한다.
+    // 무중력에서는 기존 관성을 유지하며 추진만 제한한다.
     const FVector Input =
-        LocalThrustInput.GetClampedToMaxSize(1.0f);
+        LocalThrustInput.GetClampedToMaxSize(1.0f) * (IsInteractionMovementRestricted() ? 0.5f : 1.0f);
 
     const FQuat BodyRotation =
         UpdatedComponent->GetComponentQuat();

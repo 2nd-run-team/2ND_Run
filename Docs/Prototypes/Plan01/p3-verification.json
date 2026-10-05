@@ -1,0 +1,555 @@
+{
+  "stage": "P3",
+  "verified_at": "2026-10-01T19:43:49.512740+09:00",
+  "status": "Implemented; 2/4-player PIE device checks and continuous-input full rounds passed; limits below",
+  "branch": "feature/teststage",
+  "start_head": "f2a62353815b1290279cf08d237f46a4df608312",
+  "engine": "5.8.2-56702186+++UE5+Release-5.8",
+  "map": "/Game/SpacePirate/Maps/Lvl_SPPrototype01",
+  "build": {
+    "target": "SpacePirateEditor Win64 Development",
+    "result": "Succeeded",
+    "project_generation": "Succeeded",
+    "log": "Saved/Prototype01/p3-build.log"
+  },
+  "assets": {
+    "blueprints": 13,
+    "dependency_packages": 389,
+    "actors": 68,
+    "missing": [],
+    "errors": [],
+    "walking": {
+      "common": 400.0,
+      "prototype": 450.0,
+      "sprint": 700.0
+    },
+    "camera": {
+      "range": 800.0,
+      "full_angle": 60.0,
+      "exposure_seconds": 1.5,
+      "decay_per_second": 0.5,
+      "warning_seconds": 1.0,
+      "cooldown_seconds": 6.0,
+      "wound_amount": 20.0
+    },
+    "bulkhead": {
+      "together": 2.0,
+      "bypass": 12.0
+    }
+  },
+  "cpp_automation": {
+    "succeeded": 7,
+    "succeededWithWarnings": 3,
+    "failed": 0
+  },
+  "device_checks": {
+    "two_players": 51,
+    "four_players_all_devices_under_latency": 52,
+    "emulation": {
+      "outgoing_lag_ms": 100,
+      "variance_ms": 20,
+      "loss_percent": 1
+    },
+    "camera_warning_observed_delay_seconds": {
+      "two_players": [
+        0.114,
+        0.118
+      ],
+      "four_players": [
+        0.097,
+        0.244
+      ]
+    }
+  },
+  "continuous_input_play": {
+    "two_players": {
+      "checks": 17,
+      "seconds": 64.37135040387511,
+      "escaped": 2,
+      "value": 550,
+      "maximum_wounds": [
+        0.0,
+        0.0
+      ],
+      "travel_times": [
+        {
+          "stage": "Entry supply approach",
+          "seconds": 1.5190964974462986
+        },
+        {
+          "stage": "C01 to C03 through safe laser bypass",
+          "seconds": 9.68200820311904
+        },
+        {
+          "stage": "Approach cooperative panels",
+          "seconds": 2.971636701375246
+        },
+        {
+          "stage": "Pass gate and enter S01 car",
+          "seconds": 2.6933900006115437
+        },
+        {
+          "stage": "Approach S01",
+          "seconds": 1.1231886968016624
+        },
+        {
+          "stage": "Zero-g boundary then camera cover route",
+          "seconds": 10.244862504303455
+        },
+        {
+          "stage": "Enter safe extraction",
+          "seconds": 3.17865090072155
+        }
+      ],
+      "cargo_left_reasons": {
+        "P01_C02_Parts": "보급 확보 뒤 걷기 우회를 유지하며 전진하는 정책을 선택했다.",
+        "P01_C04_HighCore": "바닥 합금을 먼저 확보했다. 상승·관성 제어와 선반 확보에 시간을 추가하지 않고 S01 전송 가치로 탈출하기로 선택했다.",
+        "P01_C05_Core": "감시 구역 안에서 멈춰 노출을 쌓는 추가 확보 대신 엄폐 사이로 통과하기로 선택했다."
+      },
+      "waiting_observation": "필수 장치 대기는 격벽 2초와 탈출 10초. 경로 이동 완료 뒤 입력 안정화 0.25~1.2초와 RPC 여유는 자동 플레이 도구의 대기이며 게임의 강제 대기가 아니다. 두 패널의 시작 시각을 맞추기 위한 별도 재시도는 없었다.",
+      "method": "Actual PIE round driven by continuous Enhanced Input after spawn. No teleport, timer, damage or score fixtures. Automated route and cargo choices."
+    },
+    "four_players": {
+      "checks": 17,
+      "seconds": 74.5712420642376,
+      "escaped": 4,
+      "value": 550,
+      "maximum_wounds": [
+        0.0,
+        20.0,
+        0.0,
+        0.0
+      ],
+      "travel_times": [
+        {
+          "stage": "Entry supply approach",
+          "seconds": 1.8851795941591263
+        },
+        {
+          "stage": "C01 to C03 through safe laser bypass",
+          "seconds": 10.522377535700798
+        },
+        {
+          "stage": "Approach cooperative panels",
+          "seconds": 3.1701878011226654
+        },
+        {
+          "stage": "Pass gate and enter S01 car",
+          "seconds": 3.1831843852996826
+        },
+        {
+          "stage": "Approach S01",
+          "seconds": 1.246230885386467
+        },
+        {
+          "stage": "Zero-g boundary then camera cover route",
+          "seconds": 16.233215644955635
+        },
+        {
+          "stage": "Enter safe extraction",
+          "seconds": 4.107864618301392
+        }
+      ],
+      "cargo_left_reasons": {
+        "P01_C02_Parts": "보급 확보 뒤 걷기 우회를 유지하며 전진하는 정책을 선택했다.",
+        "P01_C04_HighCore": "바닥 합금을 먼저 확보했다. 상승·관성 제어와 선반 확보에 시간을 추가하지 않고 S01 전송 가치로 탈출하기로 선택했다.",
+        "P01_C05_Core": "감시 구역 안에서 멈춰 노출을 쌓는 추가 확보 대신 엄폐 사이로 통과하기로 선택했다."
+      },
+      "waiting_observation": "필수 장치 대기는 격벽 2초와 탈출 10초. 경로 이동 완료 뒤 입력 안정화 0.25~1.2초와 RPC 여유는 자동 플레이 도구의 대기이며 게임의 강제 대기가 아니다. 두 패널의 시작 시각을 맞추기 위한 별도 재시도는 없었다.",
+      "method": "Actual PIE round driven by continuous Enhanced Input after spawn. No teleport, timer, damage or score fixtures. Automated route and cargo choices."
+    }
+  },
+  "gravity_network_observation": {
+    "samples": 256,
+    "characters_per_world": [
+      4,
+      4,
+      4,
+      4
+    ],
+    "stable_comparisons": 885,
+    "stable_disagreements": 0,
+    "transient_mode_difference_samples": [
+      {
+        "t": 81.74583799019456,
+        "player_index": 1,
+        "local_x": -6143.182928133802,
+        "server_x": -6143.182928133802,
+        "local_zero": false,
+        "server_zero": true
+      },
+      {
+        "t": 81.74583799019456,
+        "player_index": 2,
+        "local_x": -6321.795681246246,
+        "server_x": -6321.795681246246,
+        "local_zero": false,
+        "server_zero": true
+      },
+      {
+        "t": 81.74583799019456,
+        "player_index": 3,
+        "local_x": -6255.960939877248,
+        "server_x": -6255.960939877248,
+        "local_zero": false,
+        "server_zero": true
+      },
+      {
+        "t": 90.3877970315516,
+        "player_index": 1,
+        "local_x": -4586.291133487975,
+        "server_x": -4635.68737448787,
+        "local_zero": true,
+        "server_zero": false
+      },
+      {
+        "t": 90.5494386292994,
+        "player_index": 1,
+        "local_x": -4549.582753381674,
+        "server_x": -4622.413592941557,
+        "local_zero": true,
+        "server_zero": false
+      },
+      {
+        "t": 90.86738382652402,
+        "player_index": 2,
+        "local_x": -4587.2050894559725,
+        "server_x": -4635.656502921008,
+        "local_zero": true,
+        "server_zero": false
+      },
+      {
+        "t": 91.0246596224606,
+        "player_index": 2,
+        "local_x": -4548.667200135387,
+        "server_x": -4622.416996902039,
+        "local_zero": true,
+        "server_zero": false
+      },
+      {
+        "t": 91.33807100728154,
+        "player_index": 3,
+        "local_x": -4617.286260216652,
+        "server_x": -4664.251601281667,
+        "local_zero": true,
+        "server_zero": false
+      },
+      {
+        "t": 91.52052280679345,
+        "player_index": 3,
+        "local_x": -4573.975184179449,
+        "server_x": -4655.104876754895,
+        "local_zero": true,
+        "server_zero": false
+      },
+      {
+        "t": 91.99343991652131,
+        "player_index": 3,
+        "local_x": -4599.058085122955,
+        "server_x": -4673.417690154176,
+        "local_zero": false,
+        "server_zero": true
+      },
+      {
+        "t": 92.150485817343,
+        "player_index": 3,
+        "local_x": -4552.1168951535665,
+        "server_x": -4693.553067461079,
+        "local_zero": false,
+        "server_zero": true
+      },
+      {
+        "t": 92.73035172000527,
+        "player_index": 3,
+        "local_x": -4615.13815910709,
+        "server_x": -4661.880851021074,
+        "local_zero": true,
+        "server_zero": false
+      },
+      {
+        "t": 92.88254592195153,
+        "player_index": 3,
+        "local_x": -4578.847722506692,
+        "server_x": -4650.902301945807,
+        "local_zero": true,
+        "server_zero": false
+      }
+    ],
+    "note": "Initial S01 replication and within approximately 100cm of gravity boundary; all four crossed and extracted. Low-FPS delayed prediction can visibly correct/re-enter near the boundary."
+  },
+  "successful_run_ledgers": [
+    {
+      "RunId": "8BF4CC9B4FCA62B64D37638807F16333",
+      "transfers": [
+        {
+          "CargoId": "P01_C01_Supply",
+          "CarId": "P01_C01",
+          "value": 40
+        },
+        {
+          "CargoId": "P01_C04_Alloy",
+          "CarId": "P01_C04",
+          "value": 160
+        },
+        {
+          "CargoId": "P01_C04_S01",
+          "CarId": "P01_C04",
+          "value": 350
+        }
+      ],
+      "RunEnd_count": 1,
+      "BulkheadOpened_count": 1,
+      "value": 550
+    },
+    {
+      "RunId": "0910733045E47E437A73AE9FA8CFDC37",
+      "transfers": [
+        {
+          "CargoId": "P01_C01_Supply",
+          "CarId": "P01_C01",
+          "value": 40
+        },
+        {
+          "CargoId": "P01_C04_Alloy",
+          "CarId": "P01_C04",
+          "value": 160
+        },
+        {
+          "CargoId": "P01_C04_S01",
+          "CarId": "P01_C04",
+          "value": 350
+        }
+      ],
+      "RunEnd_count": 1,
+      "BulkheadOpened_count": 1,
+      "value": 550
+    }
+  ],
+  "preservation": {
+    "baseline_files": 129,
+    "changed_baseline_files": [
+      "Source/SpacePirate/Prototype01/SP1HUDWidget.h",
+      "Source/SpacePirate/Prototype01/SP1InteractionComponent.h",
+      "Source/SpacePirate/Prototype01/SP1TransferCargo.h",
+      "Source/SpacePirate/Prototype01/Editor/SP1EditorLibrary.h",
+      "Source/SpacePirate/Prototype01/SP1HUDWidget.cpp",
+      "Source/SpacePirate/Prototype01/SP1InteractionComponent.cpp",
+      "Source/SpacePirate/Prototype01/SP1RoundComponent.cpp",
+      "Source/SpacePirate/Prototype01/Editor/SP1EditorLibrary.cpp",
+      "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GameState.uasset",
+      "Content/SpacePirate/Prototype01/UI/WBP_SP1HUD.uasset",
+      "Content/SpacePirate/Maps/Lvl_SPPrototype01.umap",
+      "Docs/Prototypes/Plan01/implementation-status.md"
+    ],
+    "missing": [],
+    "starting_untracked_count": 3027,
+    "missing_starting_untracked": [],
+    "existing_non_prototype_source_hashes_unchanged": true,
+    "original_tracked_content_config_uproject_changes": false
+  },
+  "locks": [
+    {
+      "id": "53051759",
+      "path": "Content/SpacePirate/Maps/Lvl_SPTrainFreight.umap",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-09-29T19:52:02Z"
+    },
+    {
+      "id": "53250525",
+      "path": "Content/SpacePirate/Maps/Lvl_SPPrototype01.umap",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-09-30T18:50:47Z"
+    },
+    {
+      "id": "53250549",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1PlayerCharacter.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-09-30T18:51:14Z"
+    },
+    {
+      "id": "53250551",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1PlayerController.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-09-30T18:51:15Z"
+    },
+    {
+      "id": "53250552",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GameState.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-09-30T18:51:17Z"
+    },
+    {
+      "id": "53250553",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GameMode.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-09-30T18:51:18Z"
+    },
+    {
+      "id": "53271396",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1TransferCargo.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T07:32:52Z"
+    },
+    {
+      "id": "53271398",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1ExtractionZone.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T07:32:53Z"
+    },
+    {
+      "id": "53271399",
+      "path": "Content/SpacePirate/Prototype01/UI/WBP_SP1HUD.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T07:32:54Z"
+    },
+    {
+      "id": "53271400",
+      "path": "Content/SpacePirate/Prototype01/Data/DA_SP1Supply.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T07:32:55Z"
+    },
+    {
+      "id": "53271401",
+      "path": "Content/SpacePirate/Prototype01/Data/DA_SP1Parts.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T07:32:57Z"
+    },
+    {
+      "id": "53271402",
+      "path": "Content/SpacePirate/Prototype01/Data/DA_SP1Alloy.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T07:32:58Z"
+    },
+    {
+      "id": "53271403",
+      "path": "Content/SpacePirate/Prototype01/Data/DA_SP1Core.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T07:32:59Z"
+    },
+    {
+      "id": "53277609",
+      "path": "Content/SpacePirate/Prototype01/Audio/ATT_SP1Cargo.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T08:02:34Z"
+    },
+    {
+      "id": "53279108",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1LaserHazard.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T09:08:40Z"
+    },
+    {
+      "id": "53332075",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1CarRegion.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T10:03:41Z"
+    },
+    {
+      "id": "53332097",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1Panel.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T10:03:43Z"
+    },
+    {
+      "id": "53332133",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1Bulkhead.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T10:03:44Z"
+    },
+    {
+      "id": "53332158",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1GravityCargo.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T10:03:45Z"
+    },
+    {
+      "id": "53332198",
+      "path": "Content/SpacePirate/Prototype01/Blueprints/BP_SP1SecurityCamera.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T10:03:46Z"
+    },
+    {
+      "id": "53332219",
+      "path": "Content/SpacePirate/Prototype01/Data/DA_SP1S01.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T10:03:48Z"
+    },
+    {
+      "id": "53332264",
+      "path": "Content/SpacePirate/Prototype01/Materials/MI_SP1S01Galaxy.uasset",
+      "owner": {
+        "name": "bizet12"
+      },
+      "locked_at": "2026-10-01T10:03:49Z"
+    }
+  ],
+  "cleanup": {
+    "dirty_maps": [],
+    "dirty_content": [],
+    "pie_worlds": 0,
+    "editor_world": "/Game/SpacePirate/Maps/Lvl_SPPrototype01.Lvl_SPPrototype01",
+    "play": {
+      "PlayNumberOfClients": "1",
+      "RunUnderOneProcess": "True",
+      "NewWindowWidth": "1280",
+      "NewWindowHeight": "720"
+    },
+    "bThrottleCPUWhenNotForeground": true,
+    "network_emulation_reset": true,
+    "mcp_stop_requested": true,
+    "python_remote_execution": false
+  },
+  "not_run": [
+    "Separate process or separate PC multiplayer",
+    "Packaged build",
+    "Human playtest / subjective fun evaluation",
+    "Auditory evaluation of warning and feedback sounds",
+    "Full old P1/P2 single-car PIE scripts after six-car layout change"
+  ],
+  "known_limits": [
+    "Four same-process PIE windows on RTX 3060 Ti show texture-streaming / VRAM over-budget warnings and low frame rate. No rendering configuration was persistently changed.",
+    "With 100ms lag / 20ms variance / 1% loss, transient gravity prediction differences occur at the boundary; final crossing and stable modes agree."
+  ]
+}

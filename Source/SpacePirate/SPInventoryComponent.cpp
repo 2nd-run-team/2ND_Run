@@ -71,21 +71,13 @@ bool USPInventoryComponent::CanPickUp(const ASPCargo* Item) const
         && FindSlotForPickUp() != INDEX_NONE;
 }
 
-void USPInventoryComponent::ServerPickUp_Implementation(ASPCargo* Item)
+void USPInventoryComponent::PickUp(ASPCargo* Item)
 {
     APawn* OwnerPawn = GetOwner<APawn>();
 
     // 동시 요청의 패배, 가득 참, 가방 중복은 정상 흐름이라 기록하지 않는다.
-    if (!OwnerPawn || !CanPickUp(Item))
+    if (!ensure(OwnerPawn && OwnerPawn->HasAuthority()) || !CanPickUp(Item))
     {
-        return;
-    }
-
-    const float Distance = OwnerPawn->GetDistanceTo(Item);
-    if (Distance > ServerPickupRange)
-    {
-        SP_DEBUG_LOG(Warning, TEXT("%s: Pickup rejected: %s is %.0f away (limit %.0f). Raise ServerPickupRange if this happens under normal latency."),
-            *OwnerPawn->GetName(), *Item->GetName(), Distance, ServerPickupRange);
         return;
     }
 

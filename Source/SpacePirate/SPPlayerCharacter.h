@@ -19,6 +19,7 @@ class UAnimInstance;
 class ULocalPlayer;
 class USceneComponent;
 class USPInventoryComponent;
+class USPInteractorComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -49,6 +50,12 @@ public:
     bool IsCarryingCargo() const;
 
     USPInventoryComponent* GetInventory() const;
+
+    USPInteractorComponent* GetInteractor() const { return Interactor; }
+
+    /** 진행 바 위젯용. E 길게 누르기의 진행률 0～1, 누르는 중이 아니면 0. */
+    UFUNCTION(BlueprintPure, Category = "Interact")
+    float GetHoldProgress() const;
 
 protected:
     virtual void BeginPlay() override;
@@ -88,6 +95,13 @@ protected:
         BlueprintReadOnly,
         Category = "Components")
     TObjectPtr<USPInventoryComponent> Inventory;
+
+    /** E 길게 누르기. 서버 거리 확인과 진행 바 위젯은 이 컴포넌트 Details에서 정한다. */
+    UPROPERTY(
+        VisibleAnywhere,
+        BlueprintReadOnly,
+        Category = "Components")
+    TObjectPtr<USPInteractorComponent> Interactor;
 
     /** Axis2D: X=좌우, Y=전후. 키 배치는 기존 Input Mapping Context에서 설정한다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
@@ -135,17 +149,6 @@ protected:
     /** 던지기로 판정된 뒤 최대 속도까지 차징하는 시간(초). MVP안에 없는 시험값이다. */
     UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (ClampMin = "0.01"))
     float ThrowChargeTime = 1.0f;
-
-    /** 화면 중앙에서 물건을 찾는 구체 트레이스 길이. */
-    UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
-    float CargoTraceDistance = 250.0f;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
-    float CargoTraceRadius = 20.0f;
-
-    /** 물건을 찾는 트레이스 채널. 물건 메시가 이 채널을 Block해야 집을 수 있다. */
-    UPROPERTY(EditDefaultsOnly, Category = "Cargo", AdvancedDisplay)
-    TEnumAsByte<ECollisionChannel> CargoTraceChannel = ECC_Visibility;
 
     /** CargoHoldPoint가 붙을 메시 소켓(또는 본) 이름. 바꾸면 BP 뷰포트 미리보기에도 반영된다. */
     UPROPERTY(EditDefaultsOnly, Category = "Cargo")
@@ -197,7 +200,6 @@ private:
     void FinishDrop();
     void SelectSlot(const FInputActionValue& Value);
     void CycleSlot(const FInputActionValue& Value);
-    ASPCargo* FindItemInView() const;
     void AttachPointToSocket(USceneComponent* Point, FName SocketName);
 
     // 키를 누른 상태를 유지해 중력 전환 후에도 같은 입력을 새 모드에서 해석한다.

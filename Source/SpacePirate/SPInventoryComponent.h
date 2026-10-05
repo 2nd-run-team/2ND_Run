@@ -46,8 +46,8 @@ public:
     /** 클라이언트의 사전 확인과 서버 판정이 같은 규칙을 쓴다. */
     bool CanPickUp(const ASPCargo* Item) const;
 
-    UFUNCTION(Server, Reliable)
-    void ServerPickUp(ASPCargo* Item);
+    /** 서버 전용. 화물의 상호작용(짧게 누르기)이 완료되면 부른다. 거리는 상호작용에서 이미 확인했다. */
+    void PickUp(ASPCargo* Item);
 
     /** 현재 칸의 물건을 앞에 내려놓는다. 칸 번호는 유지한다. */
     UFUNCTION(Server, Reliable)
@@ -74,10 +74,6 @@ protected:
     /** 버릴 자리를 찾는 트레이스 채널. 벽·바닥·다른 플레이어가 이 채널을 Block해야 물건이 겹쳐 놓이지 않는다. */
     UPROPERTY(EditDefaultsOnly, Category = "Inventory", AdvancedDisplay)
     TEnumAsByte<ECollisionChannel> DropTraceChannel = ECC_WorldDynamic;
-
-    /** 서버가 허용하는 소유자-물건 최대 거리. 지연과 액터 원점 차이를 감안해 클라이언트 트레이스보다 크게 둔다. */
-    UPROPERTY(EditDefaultsOnly, Category = "Inventory", meta = (ClampMin = "0.0"))
-    float ServerPickupRange = 400.0f;
 
     /** 버릴 때 소유자 충돌 표면과 물건 사이에 두는 여유 거리. 물리가 켜진 직후 캡슐에 튕기지 않게 한다. */
     UPROPERTY(EditDefaultsOnly, Category = "Inventory", AdvancedDisplay, meta = (ClampMin = "0.0"))

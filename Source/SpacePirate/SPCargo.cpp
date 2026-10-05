@@ -1,5 +1,8 @@
 #include "SPCargo.h"
 
+#include "SPInteractableComponent.h"
+#include "SPInventoryComponent.h"
+
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Net/UnrealNetwork.h"
@@ -17,6 +20,32 @@ ASPCargo::ASPCargo()
 
 	CargoMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CargoMesh"));
 	SetRootComponent(CargoMesh);
+
+	Interactable = CreateDefaultSubobject<USPInteractableComponent>(TEXT("Interactable"));
+	Interactable->Prompt = NSLOCTEXT("SpacePirate", "PickUpPrompt", "줍기");
+}
+
+void ASPCargo::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// 클라이언트도 요청 전에 같은 조건으로 미리 거르므로 양쪽에서 묶는다.
+	Interactable->CanInteractNative.BindUObject(this, &ASPCargo::CanBePickedUpBy);
+	Interactable->OnCompletedNative.AddUObject(this, &ASPCargo::HandlePickedUp);
+}
+
+bool ASPCargo::CanBePickedUpBy(APawn* User) const
+{
+	const USPInventoryComponent* Inventory = User ? User->FindComponentByClass<USPInventoryComponent>() : nullptr;
+	return Inventory && Inventory->CanPickUp(this);
+}
+
+void ASPCargo::HandlePickedUp(APawn* User)
+{
+	if (USPInventoryComponent* Inventory = User ? User->FindComponentByClass<USPInventoryComponent>() : nullptr)
+	{
+		Inventory->PickUp(this);
+	}
 }
 
 void ASPCargo::GetLifetimeReplicatedProps(

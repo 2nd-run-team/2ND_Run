@@ -4,6 +4,7 @@
 // 운반자 지정과 부착은 서버에서만 하고, 운반자는 복제되어 클라이언트 충돌을 맞춘다.
 // 부착 위치 자체는 bReplicateMovement의 부착 복제로 클라이언트에 전달된다.
 // 가방은 손이 아니라 등에 붙는다. 칸은 다른 물건처럼 하나 차지한다.
+// 줍기는 짧게 누르는 상호작용(Interactable, 시간 0)이다. 완료되면 서버가 줍는 사람의 인벤토리에 넣는다.
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -11,6 +12,7 @@
 
 class APawn;
 class UStaticMeshComponent;
+class USPInteractableComponent;
 
 /** 물건 종류. 물건 BP의 Class Defaults나 배치한 인스턴스의 Details에서 고른다. */
 UENUM(BlueprintType)
@@ -51,10 +53,18 @@ public:
 
 	int32 GetCargoValue() const { return CargoValue; }
 
+	USPInteractableComponent* GetInteractable() const { return Interactable; }
+
 protected:
 	/** 이름은 기존 BP의 메시 설정을 유지하려고 바꾸지 않는다. */
 	UPROPERTY(VisibleAnywhere, Category = "Item")
 	TObjectPtr<UStaticMeshComponent> CargoMesh;
+
+	/** E 줍기. 시간 0(짧게 누르기)으로 두고 바꾸지 않는다. */
+	UPROPERTY(VisibleAnywhere, Category = "Item")
+	TObjectPtr<USPInteractableComponent> Interactable;
+
+	virtual void BeginPlay() override;
 
 	/** 붙는 지점(손 또는 등) 기준 위치. 물건마다 BP에서 맞춘다. */
 	UPROPERTY(EditAnywhere, Category = "Item")
@@ -81,4 +91,7 @@ private:
 	void OnRep_CurrentCarrier();
 
 	void StartPhysicsFromServerState();
+
+	bool CanBePickedUpBy(APawn* User) const;
+	void HandlePickedUp(APawn* User);
 };

@@ -3,6 +3,7 @@
 #include "SPGravitySwitch.h"
 #include "SPCharacterMovementComponent.h"
 #include "SPDebug.h"
+#include "SPInteractorComponent.h"
 #include "SPInventoryComponent.h"
 #include "SPCargo.h"
 
@@ -79,6 +80,10 @@ ASPPlayerCharacter::ASPPlayerCharacter(
             TEXT("Inventory"));
 
     Inventory->SetAttachPoints(CargoHoldPoint, BackPoint);
+
+    Interactor =
+        CreateDefaultSubobject<USPInteractorComponent>(
+            TEXT("Interactor"));
 
     JumpMaxCount = 1;
     JumpMaxHoldTime = 0.0f;
@@ -228,6 +233,13 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
             ETriggerEvent::Started,
             this,
             &ASPPlayerCharacter::Interact);
+
+        // 길게 누르기는 손을 떼면 취소한다.
+        Input->BindAction(
+            InteractAction,
+            ETriggerEvent::Completed,
+            Interactor.Get(),
+            &USPInteractorComponent::StopInteract);
     }
 
     // 짧게/길게를 놓을 때 누른 시간으로 가른다.
@@ -276,6 +288,12 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
 
 void ASPPlayerCharacter::Move(const FInputActionValue& Value)
 {
+    // 금고 직접 해제처럼 조작을 잠그는 대상을 누르는 동안에는 움직이지 않는다.
+    if (Interactor->IsControlLocked())
+    {
+        return;
+    }
+
     MoveInput = Value.Get<FVector2D>();
 
     RefreshZeroGravityInput();
@@ -331,6 +349,11 @@ void ASPPlayerCharacter::StopMove(const FInputActionValue& Value)
 
 void ASPPlayerCharacter::Look(const FInputActionValue& Value)
 {
+    if (Interactor->IsControlLocked())
+    {
+        return;
+    }
+
     const FVector2D LookInput = Value.Get<FVector2D>();
 
     AddControllerYawInput(LookInput.X * MouseSensitivity);
@@ -484,21 +507,33 @@ void ASPPlayerCharacter::Interact()
     }
 #endif
 
-    // 클라이언트에서 미리 걸러 불필요한 RPC를 줄인다. 최종 판정은 서버가 같은 규칙으로 다시 한다.
-    ASPCargo* Item = FindItemInView();
-    if (Item && Inventory->CanPickUp(Item))
-    {
-        Inventory->ServerPickUp(Item);
-    }
+    // 줍기를 포함한 E 상호작용은 Interactor가 화면 중앙 대상을 찾아 처리한다.
+    Interactor->Press();
+}
+
+float ASPPlayerCharacter::GetHoldProgress() const
+{
+    return Interactor->GetHoldProgress();
 }
 
 void ASPPlayerCharacter::StartDrop()
 {
+    // 길게 누르는 동안에는 이동과 시점 회전 말고 다른 조작은 무시한다.
+    if (Interactor->IsHolding())
+    {
+        return;
+    }
+
     DropPressedTime = GetWorld()->GetTimeSeconds();
 }
 
 void ASPPlayerCharacter::FinishDrop()
 {
+    if (Interactor->IsHolding())
+    {
+        return;
+    }
+
     if (!Inventory->GetActiveItem())
     {
         return;
@@ -518,6 +553,11 @@ void ASPPlayerCharacter::FinishDrop()
 
 void ASPPlayerCharacter::SelectSlot(const FInputActionValue& Value)
 {
+    if (Interactor->IsHolding())
+    {
+        return;
+    }
+
     // 숫자키마다 Scalar 모디파이어로 1～4를 넣어 한 액션으로 받는다.
     Inventory->ServerSelectSlot(
         FMath::RoundToInt(Value.Get<float>()) - 1);
@@ -525,42 +565,16 @@ void ASPPlayerCharacter::SelectSlot(const FInputActionValue& Value)
 
 void ASPPlayerCharacter::CycleSlot(const FInputActionValue& Value)
 {
+    if (Interactor->IsHolding())
+    {
+        return;
+    }
+
     const float Axis = Value.Get<float>();
     if (!FMath::IsNearlyZero(Axis))
     {
         Inventory->ServerCycleSlot(Axis > 0.0f ? 1 : -1);
     }
-}
-
-ASPCargo* ASPPlayerCharacter::FindItemInView() const
-{
-    if (!Controller)
-    {
-        return nullptr;
-    }
-
-    // 몸 기준 눈높이는 무중력에서 몸이 기울면 화면과 어긋나므로, 실제 카메라 시점에서 쏜다.
-    FVector ViewLocation;
-    FRotator ViewRotation;
-    Controller->GetPlayerViewPoint(ViewLocation, ViewRotation);
-
-    const FVector TraceEnd =
-        ViewLocation + ViewRotation.Vector() * CargoTraceDistance;
-
-    const FCollisionQueryParams Params(
-        SCENE_QUERY_STAT(SPItemTrace), false, this);
-
-    FHitResult Hit;
-    const bool bHit = GetWorld()->SweepSingleByChannel(
-        Hit,
-        ViewLocation,
-        TraceEnd,
-        FQuat::Identity,
-        CargoTraceChannel,
-        FCollisionShape::MakeSphere(CargoTraceRadius),
-        Params);
-
-    return bHit ? Cast<ASPCargo>(Hit.GetActor()) : nullptr;
 }
 
 void ASPPlayerCharacter::RefreshZeroGravityInput()

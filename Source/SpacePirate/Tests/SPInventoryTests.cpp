@@ -78,7 +78,7 @@ bool FSPInventorySlotsTest::RunTest(const FString& Parameters)
 
     for (ASPCargo* Item : Items)
     {
-        Inventory->ServerPickUp(Item);
+        Inventory->PickUp(Item);
     }
 
     TestEqual(TEXT("Four slots"), Inventory->GetSlots().Num(), 4);
@@ -113,14 +113,14 @@ bool FSPInventoryBagTest::RunTest(const FString& Parameters)
     ASPCargo* DrillBag = SpawnItem(World, ESPItemType::DrillBag, 0.0);
     ASPCargo* Keycard = SpawnItem(World, ESPItemType::Keycard, 100.0);
 
-    Inventory->ServerPickUp(LootBag);
+    Inventory->PickUp(LootBag);
     TestTrue(TEXT("Bag takes a slot"), Inventory->GetSlots().Contains(LootBag));
     TestTrue(TEXT("Bag is worn"), Inventory->HasBag());
     TestEqual(TEXT("Bag attaches to the back"), GetAttachPointName(LootBag), FName(TEXT("BackPoint")));
     TestFalse(TEXT("Bag slot leaves hands empty"), Player->IsCarryingCargo());
     TestFalse(TEXT("Second bag rejected even with free slots"), Inventory->CanPickUp(DrillBag));
 
-    Inventory->ServerPickUp(Keycard);
+    Inventory->PickUp(Keycard);
     TestTrue(TEXT("Tool goes to hand"), Inventory->GetHandItem() == Keycard);
     TestEqual(TEXT("Tool attaches to the hand"), GetAttachPointName(Keycard), FName(TEXT("CargoHoldPoint")));
     TestFalse(TEXT("Bag stays visible while a tool is selected"), LootBag->IsHidden());
@@ -151,7 +151,7 @@ bool FSPInventoryBagSpeedTest::RunTest(const FString& Parameters)
     const float FreeFallCap = Movement->GetMaxSpeed();
     TestEqual(TEXT("Without a bag the cap is sprint speed"), FreeFallCap, FMath::Max(Movement->MaxWalkSpeed, Movement->SprintSpeed));
 
-    Player->GetInventory()->ServerPickUp(Bag);
+    Player->GetInventory()->PickUp(Bag);
     TestEqual(TEXT("With a bag the cap is 70% of walk speed"), Movement->GetMaxSpeed(), Movement->MaxWalkSpeed * Movement->BagSpeedMultiplier);
 
     Movement->SetMovementMode(MOVE_Walking);
@@ -175,18 +175,18 @@ bool FSPInventoryDropThrowTest::RunTest(const FString& Parameters)
     ASPCargo* Bag = SpawnItem(World, ESPItemType::LootBag, -100.0);
     ASPCargo* Keycard = SpawnItem(World, ESPItemType::Keycard, 100.0);
 
-    Inventory->ServerPickUp(Bag);
+    Inventory->PickUp(Bag);
     Inventory->ServerDrop();
     TestFalse(TEXT("Dropped bag is free"), Bag->IsCarried());
     TestFalse(TEXT("Bag slot is empty after drop"), Inventory->HasBag());
     TestTrue(TEXT("Dropped bag lands in front"), Bag->GetActorLocation().X > 0.0);
 
-    Inventory->ServerPickUp(Bag);
+    Inventory->PickUp(Bag);
     Inventory->ServerThrow(1.0f);
     TestFalse(TEXT("Thrown bag is free"), Bag->IsCarried());
     TestTrue(TEXT("Thrown bag flies forward"), Bag->GetVelocity().X > 0.0);
 
-    Inventory->ServerPickUp(Keycard);
+    Inventory->PickUp(Keycard);
     Inventory->ServerThrow(1.0f);
     TestFalse(TEXT("Long press releases a tool"), Keycard->IsCarried());
     TestTrue(TEXT("Tool is placed, not thrown"), Keycard->GetVelocity().IsNearlyZero());

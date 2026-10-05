@@ -38,7 +38,7 @@ public:
 
     virtual void PawnClientRestart() override;
 
-    /** 애님 BP의 운반 포즈 전환용. 현재 칸에 화물이 있으면 true. 인벤토리가 복제되므로 다른 플레이어 화면에서도 맞다. */
+    /** 애님 BP의 운반 포즈 전환용. 손에 물건이 있으면 true(등 가방은 제외). 인벤토리가 복제되므로 다른 플레이어 화면에서도 맞다. */
     UFUNCTION(BlueprintPure, Category = "Cargo")
     bool IsCarryingCargo() const;
 
@@ -58,8 +58,8 @@ protected:
     TObjectPtr<UCameraComponent> FirstPersonCamera;
 
     /**
-     * 든 화물이 붙는 위치. 메시의 hand_r 소켓에 붙어 운반 포즈의 손을 따라간다.
-     * 손 기준 위치/회전은 BP 컴포넌트 Details에서 맞춘다.
+     * 손에 든 물건이 붙는 위치. 메시의 hand_r 소켓에 붙어 운반 포즈의 손을 따라간다.
+     * 손 기준 위치/회전은 BP 컴포넌트 Details에서 맞춘다. 이름은 기존 BP 설정을 유지하려고 바꾸지 않는다.
      */
     UPROPERTY(
         VisibleAnywhere,
@@ -67,7 +67,14 @@ protected:
         Category = "Components")
     TObjectPtr<USceneComponent> CargoHoldPoint;
 
-    /** 3칸 인벤토리. 서버 거리 검사와 버리기 여유 거리는 이 컴포넌트 Details에서 조절한다. */
+    /** 등 가방이 붙는 위치. 메시의 BackSocketName 소켓(또는 본)을 따라간다. 등 기준 위치/회전은 BP 컴포넌트 Details에서 맞춘다. */
+    UPROPERTY(
+        VisibleAnywhere,
+        BlueprintReadOnly,
+        Category = "Components")
+    TObjectPtr<USceneComponent> BackPoint;
+
+    /** 4칸 인벤토리. 서버 거리 검사, 버리기 여유 거리, 던지기 속도는 이 컴포넌트 Details에서 조절한다. */
     UPROPERTY(
         VisibleAnywhere,
         BlueprintReadOnly,
@@ -88,15 +95,15 @@ protected:
     TObjectPtr<UInputAction> SprintAction; // Shift: 중력에서는 달리기, 무중력에서는 몸 아래쪽 추진.
 
     // 인벤토리 입력. 비어 있으면 그 기능만 비활성화되고 다른 입력은 그대로 동작한다.
-    /** E: 화면 중앙의 화물을 집는다. */
+    /** E: 화면 중앙의 물건을 집는다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputAction> InteractAction;
 
-    /** G: 현재 칸의 화물을 버린다. */
+    /** G: 짧게 누르면 현재 칸의 물건을 내려놓고, 길게 누르면 가방을 던진다. 액션에 Trigger를 넣지 않아야 누른 시간을 잴 수 있다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputAction> DropAction;
 
-    /** Axis1D: 숫자키 1/2/3에 Scalar 모디파이어로 1, 2, 3을 넣는다. */
+    /** Axis1D: 숫자키 1～4에 Scalar 모디파이어로 1～4를 넣는다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputAction> SelectSlotAction;
 
@@ -104,20 +111,32 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputAction> CycleSlotAction;
 
-    /** 화면 중앙에서 화물을 찾는 구체 트레이스 길이. */
+    /** G를 이 시간(초)보다 오래 누르면 던지기다. MVP안에 없는 시험값이다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (ClampMin = "0.0"))
+    float ThrowHoldTime = 0.3f;
+
+    /** 던지기로 판정된 뒤 최대 속도까지 차징하는 시간(초). MVP안에 없는 시험값이다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (ClampMin = "0.01"))
+    float ThrowChargeTime = 1.0f;
+
+    /** 화면 중앙에서 물건을 찾는 구체 트레이스 길이. */
     UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
     float CargoTraceDistance = 250.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Cargo", meta = (ClampMin = "0.0"))
     float CargoTraceRadius = 20.0f;
 
-    /** 화물을 찾는 트레이스 채널. 화물 메시가 이 채널을 Block해야 집을 수 있다. */
+    /** 물건을 찾는 트레이스 채널. 물건 메시가 이 채널을 Block해야 집을 수 있다. */
     UPROPERTY(EditDefaultsOnly, Category = "Cargo", AdvancedDisplay)
     TEnumAsByte<ECollisionChannel> CargoTraceChannel = ECC_Visibility;
 
     /** CargoHoldPoint가 붙을 메시 소켓(또는 본) 이름. 바꾸면 BP 뷰포트 미리보기에도 반영된다. */
     UPROPERTY(EditDefaultsOnly, Category = "Cargo")
     FName CargoHoldSocketName = TEXT("hand_r");
+
+    /** BackPoint가 붙을 메시 소켓(또는 본) 이름. */
+    UPROPERTY(EditDefaultsOnly, Category = "Cargo")
+    FName BackSocketName = TEXT("spine_05");
 
     /** 임시 중력 버튼 검색 거리(cm). 서버도 같은 거리와 가림 상태를 재검사한다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gravity|Interaction", meta = (ClampMin = "1.0"))
@@ -151,14 +170,17 @@ private:
 
     // 클라이언트는 화면 기준으로 대상만 고르고, 판정과 부착은 인벤토리 컴포넌트가 서버에서 한다.
     void Interact();
-    void DropActiveCargo();
+    void StartDrop();
+    void FinishDrop();
     void SelectSlot(const FInputActionValue& Value);
     void CycleSlot(const FInputActionValue& Value);
-    ASPCargo* FindCargoInView() const;
+    ASPCargo* FindItemInView() const;
+    void AttachPointToSocket(USceneComponent* Point, FName SocketName);
 
     // 키를 누른 상태를 유지해 중력 전환 후에도 같은 입력을 새 모드에서 해석한다.
     FVector2D MoveInput = FVector2D::ZeroVector;
     bool bSprintHeld = false;
+    double DropPressedTime = 0.0;
     // 같은 설정 오류가 입력 프레임마다 반복 출력되지 않도록 하는 플래그.
     bool bReportedMissingController = false;
     bool bReportedInvalidMovementComponent = false;

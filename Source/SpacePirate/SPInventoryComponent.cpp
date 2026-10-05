@@ -1,7 +1,7 @@
 #include "SPInventoryComponent.h"
 
-#include "SPCargo.h"
 #include "SPDebug.h"
+#include "SPCargo.h"
 
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -30,36 +30,25 @@ void USPInventoryComponent::GetLifetimeReplicatedProps(
     // 다른 플레이어 화면의 운반 포즈와 이동속도 계산도 슬롯을 보므로 모두에게 복제한다.
     DOREPLIFETIME(USPInventoryComponent, Slots);
     DOREPLIFETIME(USPInventoryComponent, ActiveSlot);
-    DOREPLIFETIME(USPInventoryComponent, GrippedLarge);
 }
 
-ASPCargo* USPInventoryComponent::GetGrippedLarge() const
-{
-    return IsValid(GrippedLarge) ? GrippedLarge.Get() : nullptr;
-}
-
-void USPInventoryComponent::OnLargeReleased(const ASPCargo* Cargo)
-{
-    if (GrippedLarge.Get() == Cargo)
-    {
-        GrippedLarge = nullptr;
-
-        // 서버에서는 RepNotify가 자동 호출되지 않는다.
-        OnRep_Inventory();
-    }
-}
-
-ASPCargo* USPInventoryComponent::GetActiveCargo() const
+ASPCargo* USPInventoryComponent::GetActiveItem() const
 {
     return Slots.IsValidIndex(ActiveSlot) && IsValid(Slots[ActiveSlot])
         ? Slots[ActiveSlot].Get()
         : nullptr;
 }
 
-bool USPInventoryComponent::IsHoldingTwoHanded() const
+ASPCargo* USPInventoryComponent::GetHandItem() const
 {
-    const ASPCargo* ActiveCargo = GetActiveCargo();
-    return ActiveCargo && ActiveCargo->IsTwoHanded();
+    ASPCargo* Item = GetActiveItem();
+    return Item && !Item->IsBag() ? Item : nullptr;
+}
+
+bool USPInventoryComponent::HasBag() const
+{
+    return Slots.ContainsByPredicate(
+        [](const TObjectPtr<ASPCargo>& Item) { return IsValid(Item) && Item->IsBag(); });
 }
 
 int32 USPInventoryComponent::FindSlotForPickUp() const
@@ -71,88 +60,82 @@ int32 USPInventoryComponent::FindSlotForPickUp() const
     }
 
     return Slots.IndexOfByPredicate(
-        [](const TObjectPtr<ASPCargo>& Cargo) { return !IsValid(Cargo); });
+        [](const TObjectPtr<ASPCargo>& Item) { return !IsValid(Item); });
 }
 
-bool USPInventoryComponent::CanPickUp(const ASPCargo* Cargo) const
+bool USPInventoryComponent::CanPickUp(const ASPCargo* Item) const
 {
-    if (!IsValid(Cargo) || IsGrippingLarge())
-    {
-        return false;
-    }
-
-    // Large는 칸에 넣지 않고 잡는 지점을 맡는다. 양손이 필요하므로 현재 칸이 비어 있어야 한다.
-    if (Cargo->GetWeight() == ESPCargoWeight::Large)
-    {
-        return !GetActiveCargo() && Cargo->CanAddLargeCarrier(GetOwner<APawn>());
-    }
-
-    return !Cargo->IsCarried()
-        && !IsHoldingTwoHanded()
+    return IsValid(Item)
+        && !Item->IsCarried()
+        && !(Item->IsBag() && HasBag())
         && FindSlotForPickUp() != INDEX_NONE;
 }
 
-void USPInventoryComponent::ServerPickUp_Implementation(ASPCargo* Cargo)
+void USPInventoryComponent::ServerPickUp_Implementation(ASPCargo* Item)
 {
     APawn* OwnerPawn = GetOwner<APawn>();
 
-    // 동시 요청의 패배, 가득 참, 양손 제한은 정상 흐름이라 기록하지 않는다.
-    if (!OwnerPawn || !CanPickUp(Cargo))
+    // 동시 요청의 패배, 가득 참, 가방 중복은 정상 흐름이라 기록하지 않는다.
+    if (!OwnerPawn || !CanPickUp(Item))
     {
         return;
     }
 
-    // Large는 CanPickUp에서 잡는 지점까지의 거리를 이미 확인했다.
-    if (Cargo->GetWeight() == ESPCargoWeight::Large)
-    {
-        if (Cargo->AddLargeCarrier(OwnerPawn))
-        {
-            GrippedLarge = Cargo;
-            OnRep_Inventory();
-        }
-        return;
-    }
-
-    const float Distance = OwnerPawn->GetDistanceTo(Cargo);
+    const float Distance = OwnerPawn->GetDistanceTo(Item);
     if (Distance > ServerPickupRange)
     {
         SP_DEBUG_LOG(Warning, TEXT("%s: Pickup rejected: %s is %.0f away (limit %.0f). Raise ServerPickupRange if this happens under normal latency."),
-            *OwnerPawn->GetName(), *Cargo->GetName(), Distance, ServerPickupRange);
+            *OwnerPawn->GetName(), *Item->GetName(), Distance, ServerPickupRange);
+        return;
+    }
+
+    USceneComponent* AttachPoint = Item->IsBag() ? BackPoint : HandPoint;
+    if (!Item->AttachToCarrier(OwnerPawn, AttachPoint))
+    {
+        SP_DEBUG_LOG(Error, TEXT("%s: Pickup failed: could not attach %s to %s. Check that the owner calls SetAttachPoints in its constructor."),
+            *OwnerPawn->GetName(), *Item->GetName(), *GetNameSafe(AttachPoint));
         return;
     }
 
     const int32 SlotIndex = FindSlotForPickUp();
-
-    if (!Cargo->AttachToCarrier(OwnerPawn, HoldPoint))
-    {
-        SP_DEBUG_LOG(Error, TEXT("%s: Pickup failed: could not attach %s to HoldPoint=%s. Check that the owner calls SetHoldPoint in its constructor."),
-            *OwnerPawn->GetName(), *Cargo->GetName(), *GetNameSafe(HoldPoint.Get()));
-        return;
-    }
-
-    Slots[SlotIndex] = Cargo;
+    Slots[SlotIndex] = Item;
     ApplyActiveSlot(SlotIndex);
 }
 
 void USPInventoryComponent::ServerDrop_Implementation()
 {
-    // 들려 있던 Large는 인원이 모자라게 되면 그 자리에서 떨어진다. 잡기 상태는 OnLargeReleased에서 풀린다.
-    if (ASPCargo* Large = GetGrippedLarge())
+    DropActiveItem(FVector::ZeroVector);
+}
+
+void USPInventoryComponent::ServerThrow_Implementation(float Charge)
+{
+    const ASPCargo* Item = GetActiveItem();
+    const APawn* OwnerPawn = GetOwner<APawn>();
+
+    // 도구는 길게 눌러도 내려놓는다.
+    if (!Item || !Item->IsBag() || !OwnerPawn)
     {
-        Large->RemoveLargeCarrier(GetOwner<APawn>());
+        DropActiveItem(FVector::ZeroVector);
         return;
     }
 
-    ASPCargo* Cargo = GetActiveCargo();
+    // 원격 플레이어의 시선 상하 각도는 GetBaseAimRotation이 복제된 값으로 채운다.
+    const float Speed = FMath::Lerp(MinThrowSpeed, MaxThrowSpeed, FMath::Clamp(Charge, 0.0f, 1.0f));
+    DropActiveItem(OwnerPawn->GetBaseAimRotation().Vector() * Speed);
+}
+
+void USPInventoryComponent::DropActiveItem(const FVector& Velocity)
+{
+    ASPCargo* Item = GetActiveItem();
     FVector DropLocation;
 
     // 앞이 막혀 있으면 계속 든다. 벽에 붙어 누른 정상 상황이라 기록하지 않는다.
-    if (!Cargo || !FindDropLocation(*Cargo, DropLocation))
+    if (!Item || !FindDropLocation(*Item, DropLocation))
     {
         return;
     }
 
-    Cargo->DetachFromCarrier(DropLocation);
+    Item->DetachFromCarrier(DropLocation, Velocity);
     Slots[ActiveSlot] = nullptr;
 
     // 서버에서는 RepNotify가 자동 호출되지 않는다.
@@ -161,11 +144,7 @@ void USPInventoryComponent::ServerDrop_Implementation()
 
 void USPInventoryComponent::ServerSelectSlot_Implementation(int32 SlotIndex)
 {
-    // 양손 화물을 들거나 Large를 잡은 동안에는 전환할 수 없다. 버려야 풀린다.
-    if (!Slots.IsValidIndex(SlotIndex)
-        || SlotIndex == ActiveSlot
-        || IsHoldingTwoHanded()
-        || IsGrippingLarge())
+    if (!Slots.IsValidIndex(SlotIndex) || SlotIndex == ActiveSlot)
     {
         return;
     }
@@ -189,12 +168,12 @@ void USPInventoryComponent::ApplyActiveSlot(int32 NewSlot)
 {
     ActiveSlot = NewSlot;
 
-    // bHidden은 복제되므로 서버에서만 바꾸면 모든 화면에 반영된다.
+    // 가방은 등에 항상 보이고, 손 물건은 현재 칸만 보인다. bHidden은 복제되므로 서버에서만 바꾸면 된다.
     for (int32 Index = 0; Index < Slots.Num(); ++Index)
     {
-        if (IsValid(Slots[Index]))
+        if (ASPCargo* Item = Slots[Index]; IsValid(Item))
         {
-            Slots[Index]->SetActorHiddenInGame(Index != ActiveSlot);
+            Item->SetActorHiddenInGame(!Item->IsBag() && Index != ActiveSlot);
         }
     }
 
@@ -203,26 +182,26 @@ void USPInventoryComponent::ApplyActiveSlot(int32 NewSlot)
 }
 
 bool USPInventoryComponent::FindDropLocation(
-    const ASPCargo& Cargo,
+    const ASPCargo& Item,
     FVector& OutLocation) const
 {
     const AActor* Owner = GetOwner();
 
     // 운반 중에는 충돌이 꺼져 있으므로 충돌 없는 컴포넌트까지 포함해 크기를 잰다.
-    const FBox CargoBounds = Cargo.GetComponentsBoundingBox(true);
-    const FVector CargoExtent = CargoBounds.GetExtent();
+    const FBox ItemBounds = Item.GetComponentsBoundingBox(true);
+    const FVector ItemExtent = ItemBounds.GetExtent();
 
     float OwnerRadius = 0.0f;
     float OwnerHalfHeight = 0.0f;
     Owner->GetSimpleCollisionCylinder(OwnerRadius, OwnerHalfHeight);
 
-    // 소유자 중심에서 몸 정면으로, 화물이 소유자와 겹치지 않는 거리까지 화물 크기의 상자를 쓸어 본다.
+    // 소유자 중심에서 몸 정면으로, 물건이 소유자와 겹치지 않는 거리까지 물건 크기의 상자를 쓸어 본다.
     const FVector Start = Owner->GetActorLocation();
-    const float Distance = OwnerRadius + CargoExtent.Size2D() + DropGap;
+    const float Distance = OwnerRadius + ItemExtent.Size2D() + DropGap;
     const FVector End = Start + Owner->GetActorForwardVector() * Distance;
 
-    FCollisionQueryParams Params(SCENE_QUERY_STAT(SPCargoDrop), false, Owner);
-    Params.AddIgnoredActor(&Cargo);
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SPItemDrop), false, Owner);
+    Params.AddIgnoredActor(&Item);
 
     FHitResult Hit;
     const bool bHit = GetWorld()->SweepSingleByChannel(
@@ -231,10 +210,10 @@ bool USPInventoryComponent::FindDropLocation(
         End,
         FQuat::Identity,
         DropTraceChannel,
-        FCollisionShape::MakeBox(CargoExtent),
+        FCollisionShape::MakeBox(ItemExtent),
         Params);
 
-    // 시작부터 겹치면(벽에 붙음, 화물이 소유자보다 큼) 놓을 자리가 없다.
+    // 시작부터 겹치면(벽에 붙음, 물건이 소유자보다 큼) 놓을 자리가 없다.
     if (bHit && Hit.bStartPenetrating)
     {
         return false;
@@ -244,14 +223,14 @@ bool USPInventoryComponent::FindDropLocation(
 
     // 상자 중심 기준으로 찾았으므로 메시 피벗 위치로 되돌린다.
     OutLocation = DropCenter
-        + (Cargo.GetActorLocation() - CargoBounds.GetCenter());
+        + (Item.GetActorLocation() - ItemBounds.GetCenter());
     return true;
 }
 
 void USPInventoryComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    // 소유자가 파괴(접속 종료 등)되면 가진 화물이 숨겨지거나 충돌 없는 상태로 남지 않게 제자리에 떨어뜨린다.
-    // 레벨 종료 시에는 화물도 함께 정리되므로 처리하지 않는다.
+    // 소유자가 파괴(접속 종료 등)되면 가진 물건이 숨겨지거나 충돌 없는 상태로 남지 않게 제자리에 떨어뜨린다.
+    // 레벨 종료 시에는 물건도 함께 정리되므로 처리하지 않는다.
     if (EndPlayReason == EEndPlayReason::Destroyed
         && GetOwner() && GetOwner()->HasAuthority())
     {
@@ -263,19 +242,14 @@ void USPInventoryComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void USPInventoryComponent::DropAll()
 {
-    if (ASPCargo* Large = GetGrippedLarge())
+    for (TObjectPtr<ASPCargo>& Item : Slots)
     {
-        Large->RemoveLargeCarrier(GetOwner<APawn>());
-    }
-
-    for (TObjectPtr<ASPCargo>& Cargo : Slots)
-    {
-        if (IsValid(Cargo))
+        if (IsValid(Item))
         {
-            Cargo->DetachFromCarrier(Cargo->GetActorLocation());
+            Item->DetachFromCarrier(Item->GetActorLocation());
         }
 
-        Cargo = nullptr;
+        Item = nullptr;
     }
 }
 
@@ -293,20 +267,15 @@ void USPInventoryComponent::OnRep_Inventory()
     FString Text = OwnerPawn->GetName() + TEXT("  ");
     for (int32 Index = 0; Index < Slots.Num(); ++Index)
     {
-        const ASPCargo* Cargo = Slots[Index];
-        const FString ItemName = IsValid(Cargo)
-            ? UEnum::GetDisplayValueAsText(Cargo->GetWeight()).ToString()
+        const ASPCargo* Item = Slots[Index];
+        const FString ItemName = IsValid(Item)
+            ? UEnum::GetDisplayValueAsText(Item->GetItemType()).ToString()
             : TEXT("-");
 
         Text += FString::Printf(TEXT("%s[%d] %s  "),
             Index == ActiveSlot ? TEXT(">") : TEXT(""),
             Index + 1,
             *ItemName);
-    }
-
-    if (IsGrippingLarge())
-    {
-        Text += TEXT("[Gripping Large]");
     }
 
     GEngine->AddOnScreenDebugMessage(

@@ -1,5 +1,4 @@
 #include "SPCharacterMovementComponent.h"
-#include "SPCargo.h"
 #include "SPDebug.h"
 #include "SPGravityWorldSubsystem.h"
 #include "SPInventoryComponent.h"
@@ -360,121 +359,31 @@ float USPCharacterMovementComponent::GetMaxSpeed() const
         return FMath::Max(ZeroGravityMaxSpeed, 1.0f);
     }
 
-    return GetGravityMaxSpeed() * GetCargoSpeedMultiplier();
+    const float CarryMultiplier =
+        IsWearingBag() ? FMath::Clamp(BagSpeedMultiplier, 0.1f, 1.0f) : 1.0f;
+
+    return GetGravityMaxSpeed() * CarryMultiplier;
 }
 
-float USPCharacterMovementComponent::GetCargoSpeedMultiplier() const
+bool USPCharacterMovementComponent::IsWearingBag() const
 {
+    // ponytail: 인벤토리는 서버에서 복제되므로 가방을 메거나 내려놓은 직후 한 번 짧은 위치 보정이 생길 수 있다.
+    // 거슬리면 가방 여부를 이동 기록(SavedMove/NetworkMoveData)에 넣어 예측에 포함시킨다.
     const ASPPlayerCharacter* SPOwner =
         Cast<ASPPlayerCharacter>(CharacterOwner);
 
     const USPInventoryComponent* Inventory =
         SPOwner ? SPOwner->GetInventory() : nullptr;
 
-    if (!Inventory)
-    {
-        return 1.0f;
-    }
-
-    // 손에 든 것뿐 아니라 보관 중인 화물까지 모두의 배율을 누적해 곱한다.
-    // ponytail: 인벤토리는 서버에서 복제되므로 집기/버리기 직후 한 번 짧은 위치 보정이 생길 수 있다.
-    // 거슬리면 누적 배율을 이동 기록(SavedMove/NetworkMoveData)에 넣어 예측에 포함시킨다.
-    float Multiplier = 1.0f;
-
-    for (const ASPCargo* Cargo : Inventory->GetSlots())
-    {
-        Multiplier *= GetCarrySpeedMultiplier(Cargo);
-    }
-
-    // Large는 칸 밖에서 따로 잡는다.
-    return Multiplier * GetCarrySpeedMultiplier(Inventory->GetGrippedLarge());
-}
-
-float USPCharacterMovementComponent::GetCarrySpeedMultiplier(const ASPCargo* Cargo) const
-{
-    if (!IsValid(Cargo))
-    {
-        return 1.0f;
-    }
-
-    // 화물에 개별 배율이 켜져 있으면 무게 등급 기본값보다 우선한다.
-    if (const TOptional<float> Override = Cargo->GetCarrySpeedOverride();
-        Override.IsSet())
-    {
-        return FMath::Clamp(Override.GetValue(), 0.1f, 1.0f);
-    }
-
-    switch (Cargo->GetWeight())
-    {
-    case ESPCargoWeight::Small:
-        return FMath::Clamp(SmallCargoSpeedMultiplier, 0.1f, 1.0f);
-    case ESPCargoWeight::Mid:
-        return FMath::Clamp(MidCargoSpeedMultiplier, 0.1f, 1.0f);
-    case ESPCargoWeight::Large:
-        return FMath::Clamp(LargeCargoSpeedMultiplier, 0.1f, 1.0f);
-    }
-
-    return 1.0f;
-}
-
-void USPCharacterMovementComponent::OnMovementUpdated(
-    float DeltaSeconds,
-    const FVector& OldLocation,
-    const FVector& OldVelocity)
-{
-    Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
-
-    ApplyLargeGripLeash();
-}
-
-void USPCharacterMovementComponent::ApplyLargeGripLeash()
-{
-    const ASPPlayerCharacter* SPOwner =
-        Cast<ASPPlayerCharacter>(CharacterOwner);
-
-    const USPInventoryComponent* Inventory =
-        SPOwner ? SPOwner->GetInventory() : nullptr;
-
-    const ASPCargo* Large =
-        Inventory ? Inventory->GetGrippedLarge() : nullptr;
-
-    FVector GripLocation;
-    if (!Large || !Large->GetGripLocationFor(CharacterOwner, GripLocation))
-    {
-        return;
-    }
-
-    // 중력에서는 수평 거리만 본다. 점프나 높이 차이로 끌려 내려오지 않게 한다.
-    FVector Offset = UpdatedComponent->GetComponentLocation() - GripLocation;
-    if (!IsZeroGravity())
-    {
-        Offset.Z = 0.0;
-    }
-
-    const double Range = Large->GetLeashLength();
-    if (Offset.SizeSquared() <= FMath::Square(Range))
-    {
-        return;
-    }
-
-    // ponytail: 클라이언트가 보는 화물 위치는 서버보다 조금 늦어, 줄 끝에 닿을 때 작은 위치 보정이 생길 수 있다.
-    // 거슬리면 줄 판정에 쓰는 화물 위치를 이동 기록에 넣는다.
-    // 줄 밖으로 나간 만큼 되돌리고, 바깥쪽으로 향하는 속도를 없앤다. 무중력에서는 관성 때문에 속도도 지워야 멈춘다.
-    const FVector Outward = Offset.GetSafeNormal();
-    FHitResult Hit;
-    SafeMoveUpdatedComponent(
-        -Outward * (Offset.Size() - Range),
-        UpdatedComponent->GetComponentQuat(),
-        true,
-        Hit);
-
-    Velocity -= Outward * FMath::Max(FVector::DotProduct(Velocity, Outward), 0.0);
+    return Inventory && Inventory->HasBag();
 }
 
 float USPCharacterMovementComponent::GetGravityMaxSpeed() const
 {
-    const float EffectiveSprintSpeed =
-        FMath::Max(MaxWalkSpeed, SprintSpeed);
+    // 가방을 멘 동안에는 달리기를 눌러도 걷기 속도다.
+    const float EffectiveSprintSpeed = IsWearingBag()
+        ? MaxWalkSpeed
+        : FMath::Max(MaxWalkSpeed, SprintSpeed);
 
     if (IsMovingOnGround())
     {

@@ -1,10 +1,10 @@
 #include "SPPlayerCharacter.h"
 
-#include "SPCargo.h"
 #include "SPGravitySwitch.h"
 #include "SPCharacterMovementComponent.h"
 #include "SPDebug.h"
 #include "SPInventoryComponent.h"
+#include "SPCargo.h"
 
 #include "Engine/World.h"
 
@@ -64,11 +64,17 @@ ASPPlayerCharacter::ASPPlayerCharacter(
     // 생성자에서는 C++ 기본 소켓으로 붙이고, BP에서 바꾼 소켓은 OnConstruction에서 다시 붙인다.
     CargoHoldPoint->SetupAttachment(GetMesh(), CargoHoldSocketName);
 
+    BackPoint =
+        CreateDefaultSubobject<USceneComponent>(
+            TEXT("BackPoint"));
+
+    BackPoint->SetupAttachment(GetMesh(), BackSocketName);
+
     Inventory =
         CreateDefaultSubobject<USPInventoryComponent>(
             TEXT("Inventory"));
 
-    Inventory->SetHoldPoint(CargoHoldPoint);
+    Inventory->SetAttachPoints(CargoHoldPoint, BackPoint);
 
     JumpMaxCount = 1;
     JumpMaxHoldTime = 0.0f;
@@ -168,13 +174,20 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
             &ASPPlayerCharacter::Interact);
     }
 
+    // 짧게/길게를 놓을 때 누른 시간으로 가른다.
     if (DropAction)
     {
         Input->BindAction(
             DropAction,
             ETriggerEvent::Started,
             this,
-            &ASPPlayerCharacter::DropActiveCargo);
+            &ASPPlayerCharacter::StartDrop);
+
+        Input->BindAction(
+            DropAction,
+            ETriggerEvent::Completed,
+            this,
+            &ASPPlayerCharacter::FinishDrop);
     }
 
     if (SelectSlotAction)
@@ -344,30 +357,36 @@ void ASPPlayerCharacter::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
 
-    // 생성자 시점에는 BP에서 바꾼 CargoHoldSocketName이 아직 적용되지 않는다.
-    if (CargoHoldPoint->GetAttachSocketName() != CargoHoldSocketName)
+    // 생성자 시점에는 BP에서 바꾼 소켓 이름이 아직 적용되지 않는다.
+    AttachPointToSocket(CargoHoldPoint, CargoHoldSocketName);
+    AttachPointToSocket(BackPoint, BackSocketName);
+}
+
+void ASPPlayerCharacter::AttachPointToSocket(USceneComponent* Point, FName SocketName)
+{
+    if (Point->GetAttachSocketName() != SocketName)
     {
-        CargoHoldPoint->AttachToComponent(
+        Point->AttachToComponent(
             GetMesh(),
             FAttachmentTransformRules::KeepRelativeTransform,
-            CargoHoldSocketName);
+            SocketName);
     }
 
     // 에디터 편집 중 반복 호출되므로 게임 월드에서만 알린다.
-    // 소켓이 없으면 화물이 메시 원점(발밑)에 붙는다.
+    // 소켓이 없으면 물건이 메시 원점(발밑)에 붙는다.
     if (GetWorld() && GetWorld()->IsGameWorld()
         && GetMesh()->GetSkeletalMeshAsset()
-        && !GetMesh()->DoesSocketExist(CargoHoldSocketName))
+        && !GetMesh()->DoesSocketExist(SocketName))
     {
-        SP_DEBUG_LOG(Warning, TEXT("%s: CargoHoldSocketName '%s' not found on mesh %s. Check the socket/bone name in the player Blueprint Class Defaults."),
-            *GetName(), *CargoHoldSocketName.ToString(),
+        SP_DEBUG_LOG(Warning, TEXT("%s: Socket '%s' for %s not found on mesh %s. Check the socket/bone name in the player Blueprint Class Defaults."),
+            *GetName(), *SocketName.ToString(), *Point->GetName(),
             *GetNameSafe(GetMesh()->GetSkeletalMeshAsset()));
     }
 }
 
 bool ASPPlayerCharacter::IsCarryingCargo() const
 {
-    return Inventory->GetActiveCargo() != nullptr;
+    return Inventory->GetHandItem() != nullptr;
 }
 
 USPInventoryComponent* ASPPlayerCharacter::GetInventory() const
@@ -375,7 +394,7 @@ USPInventoryComponent* ASPPlayerCharacter::GetInventory() const
     return Inventory;
 }
 
-// 작업자: 김세훈 | 임시 버튼을 우선 사용하고 기존 화물 상호작용으로 이어간다.
+// 작업자: 김세훈 | 임시 버튼을 우선 사용하고 기존 물건 상호작용으로 이어간다.
 void ASPPlayerCharacter::Interact()
 {
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
@@ -387,24 +406,40 @@ void ASPPlayerCharacter::Interact()
 #endif
 
     // 클라이언트에서 미리 걸러 불필요한 RPC를 줄인다. 최종 판정은 서버가 같은 규칙으로 다시 한다.
-    ASPCargo* Cargo = FindCargoInView();
-    if (Cargo && Inventory->CanPickUp(Cargo))
+    ASPCargo* Item = FindItemInView();
+    if (Item && Inventory->CanPickUp(Item))
     {
-        Inventory->ServerPickUp(Cargo);
+        Inventory->ServerPickUp(Item);
     }
 }
 
-void ASPPlayerCharacter::DropActiveCargo()
+void ASPPlayerCharacter::StartDrop()
 {
-    if (IsCarryingCargo() || Inventory->IsGrippingLarge())
+    DropPressedTime = GetWorld()->GetTimeSeconds();
+}
+
+void ASPPlayerCharacter::FinishDrop()
+{
+    if (!Inventory->GetActiveItem())
+    {
+        return;
+    }
+
+    const double HeldTime = GetWorld()->GetTimeSeconds() - DropPressedTime;
+    if (HeldTime < ThrowHoldTime)
     {
         Inventory->ServerDrop();
+        return;
     }
+
+    // 던지기로 판정된 뒤부터 차징한다. 가방이 아니면 서버가 내려놓기로 처리한다.
+    const double Charge = (HeldTime - ThrowHoldTime) / FMath::Max(ThrowChargeTime, 0.01f);
+    Inventory->ServerThrow(static_cast<float>(FMath::Clamp(Charge, 0.0, 1.0)));
 }
 
 void ASPPlayerCharacter::SelectSlot(const FInputActionValue& Value)
 {
-    // 숫자키마다 Scalar 모디파이어로 1, 2, 3을 넣어 한 액션으로 받는다.
+    // 숫자키마다 Scalar 모디파이어로 1～4를 넣어 한 액션으로 받는다.
     Inventory->ServerSelectSlot(
         FMath::RoundToInt(Value.Get<float>()) - 1);
 }
@@ -418,7 +453,7 @@ void ASPPlayerCharacter::CycleSlot(const FInputActionValue& Value)
     }
 }
 
-ASPCargo* ASPPlayerCharacter::FindCargoInView() const
+ASPCargo* ASPPlayerCharacter::FindItemInView() const
 {
     if (!Controller)
     {
@@ -434,7 +469,7 @@ ASPCargo* ASPPlayerCharacter::FindCargoInView() const
         ViewLocation + ViewRotation.Vector() * CargoTraceDistance;
 
     const FCollisionQueryParams Params(
-        SCENE_QUERY_STAT(SPCargoTrace), false, this);
+        SCENE_QUERY_STAT(SPItemTrace), false, this);
 
     FHitResult Hit;
     const bool bHit = GetWorld()->SweepSingleByChannel(
@@ -592,9 +627,9 @@ ASPGravitySwitch* ASPPlayerCharacter::FindGravitySwitchInView() const
     }
 
     FCollisionQueryParams Params(SCENE_QUERY_STAT(SPGravitySwitchTrace), false, this);
-    if (ASPCargo* ActiveCargo = Inventory->GetActiveCargo())
+    if (ASPCargo* HandItem = Inventory->GetHandItem())
     {
-        Params.AddIgnoredActor(ActiveCargo);
+        Params.AddIgnoredActor(HandItem);
     }
     const FVector End = ViewLocation
         + ViewRotation.Vector() * FMath::Max(GravitySwitchUseDistance, 1.0f);

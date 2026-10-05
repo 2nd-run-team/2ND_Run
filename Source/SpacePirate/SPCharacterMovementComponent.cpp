@@ -232,6 +232,9 @@ USPCharacterMovementComponent::USPCharacterMovementComponent()
     // 엔진이 이미 UPROPERTY로 노출한 값의 초기값이다. BP의 Character Movement에서 덮어쓸 수 있다.
     MaxWalkSpeed = 400.0f;
     SprintSpeed = 700.0f;
+    GetNavAgentPropertiesRef().bCanCrouch = true;
+    SetCrouchedHalfHeight(56.0f);
+    MaxWalkSpeedCrouched = 160.0f;
 
     MaxAcceleration = 2048.0f;
     BrakingDecelerationWalking = 2048.0f;

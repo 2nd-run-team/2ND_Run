@@ -14,6 +14,9 @@ class ASPCargo;
 class ASPGravitySwitch;
 class UCameraComponent;
 class UInputAction;
+class UInputMappingContext;
+class UAnimInstance;
+class ULocalPlayer;
 class USceneComponent;
 class USPInventoryComponent;
 struct FInputActionValue;
@@ -38,6 +41,9 @@ public:
 
     virtual void PawnClientRestart() override;
 
+    virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+    virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+
     /** 애님 BP의 운반 포즈 전환용. 손에 물건이 있으면 true(등 가방은 제외). 인벤토리가 복제되므로 다른 플레이어 화면에서도 맞다. */
     UFUNCTION(BlueprintPure, Category = "Cargo")
     bool IsCarryingCargo() const;
@@ -45,6 +51,8 @@ public:
     USPInventoryComponent* GetInventory() const;
 
 protected:
+    virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void SetupPlayerInputComponent(
         UInputComponent* PlayerInputComponent) override;
 
@@ -93,6 +101,15 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputAction> SprintAction; // Shift: 중력에서는 달리기, 무중력에서는 몸 아래쪽 추진.
+
+    /** 선택 사항. 비어 있으면 Ctrl 유지형 액션/매핑을 런타임에 생성한다. */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    TObjectPtr<UInputAction> CrouchAction;
+
+    /** 기존 운반 애님 BP 뒤에 앉기 자세를 합성한다. 다른 스켈레톤은 호환 에셋으로 교체한다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Stealth|Animation")
+    TSoftClassPtr<UAnimInstance> CrouchPoseClass = TSoftClassPtr<UAnimInstance>(
+        FSoftObjectPath(TEXT("/Game/SpacePirate/Stealth/Animation/ABP_SPCrouchPostProcess.ABP_SPCrouchPostProcess_C")));
 
     // 인벤토리 입력. 비어 있으면 그 기능만 비활성화되고 다른 입력은 그대로 동작한다.
     /** E: 화면 중앙의 물건을 집는다. */
@@ -165,6 +182,12 @@ private:
 
     void StartSprint();
     void StopSprint();
+    void HoldCrouch();
+    void ReleaseCrouch();
+
+    UPROPERTY(Transient)
+    TObjectPtr<UInputMappingContext> CrouchMappingContext;
+    TWeakObjectPtr<ULocalPlayer> CrouchLocalPlayer;
 
     void UpdateSprintRequest();
 

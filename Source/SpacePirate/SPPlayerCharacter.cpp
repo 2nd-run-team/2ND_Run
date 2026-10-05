@@ -15,8 +15,12 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
+#include "Engine/LocalPlayer.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
+#include "Animation/AnimInstance.h"
 
 // NOTICE [TEMP-GRAVITY-SWITCH]: 정식 장치 도입 후 Interact의 버튼 분기와 버튼 검색/RPC를 교체한다.
 // 작업자: 김세훈 (중력 영역/버튼 연동). Shipping/Test에서는 임시 버튼 사용을 제외한다.
@@ -80,6 +84,30 @@ ASPPlayerCharacter::ASPPlayerCharacter(
     JumpMaxHoldTime = 0.0f;
 }
 
+void ASPPlayerCharacter::BeginPlay()
+{
+    Super::BeginPlay();
+    if (GetMesh()->GetSkeletalMeshAsset() && !CrouchPoseClass.IsNull())
+    {
+        if (UClass* PoseClass = CrouchPoseClass.LoadSynchronous())
+        {
+            GetMesh()->SetOverridePostProcessAnimBP(PoseClass);
+        }
+    }
+}
+
+void ASPPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (CrouchLocalPlayer.IsValid() && CrouchMappingContext)
+    {
+        if (auto* Subsystem = CrouchLocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+        {
+            Subsystem->RemoveMappingContext(CrouchMappingContext);
+        }
+    }
+    Super::EndPlay(EndPlayReason);
+}
+
 void ASPPlayerCharacter::SetupPlayerInputComponent(
     UInputComponent* PlayerInputComponent)
 {
@@ -94,6 +122,34 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
             *GetName(), *GetNameSafe(PlayerInputComponent));
         return;
     }
+
+    // 기존 팀 IMC/BP를 재저장하지 않아도 Ctrl 유지형 앉기가 동작한다.
+    // Crouch의 bWantsToCrouch는 엔진 SavedMove의 기본 압축 플래그로 예측/복제된다.
+    if (!CrouchAction)
+    {
+        CrouchAction = NewObject<UInputAction>(this, TEXT("IA_SPHoldCrouch"));
+        CrouchAction->ValueType = EInputActionValueType::Boolean;
+        CrouchMappingContext = NewObject<UInputMappingContext>(this);
+        CrouchMappingContext->MapKey(CrouchAction, EKeys::LeftControl);
+        CrouchMappingContext->MapKey(CrouchAction, EKeys::RightControl);
+    }
+    if (CrouchMappingContext)
+    {
+        if (APlayerController* PC = Cast<APlayerController>(Controller))
+        {
+            if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+            {
+                if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+                {
+                    CrouchLocalPlayer = LocalPlayer;
+                    Subsystem->AddMappingContext(CrouchMappingContext, 1);
+                }
+            }
+        }
+    }
+    Input->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &ASPPlayerCharacter::HoldCrouch);
+    Input->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ASPPlayerCharacter::ReleaseCrouch);
+    Input->BindAction(CrouchAction, ETriggerEvent::Canceled, this, &ASPPlayerCharacter::ReleaseCrouch);
 
     if (!MoveAction || !LookAction || !JumpAction || !SprintAction)
     {
@@ -307,6 +363,29 @@ void ASPPlayerCharacter::EndJump()
     RefreshZeroGravityInput();
 
     StopJumping();
+}
+
+void ASPPlayerCharacter::HoldCrouch()
+{
+    Crouch();
+}
+
+void ASPPlayerCharacter::ReleaseCrouch()
+{
+    UnCrouch();
+}
+
+void ASPPlayerCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+    Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+    // 카메라는 캡슐 부착이므로 메시 보정과 별개로 눈높이도 낮춘다.
+    FirstPersonCamera->AddLocalOffset(FVector(0, 0, -HalfHeightAdjust * 0.5f));
+}
+
+void ASPPlayerCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+    Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+    FirstPersonCamera->AddLocalOffset(FVector(0, 0, HalfHeightAdjust * 0.5f));
 }
 
 void ASPPlayerCharacter::StartSprint()

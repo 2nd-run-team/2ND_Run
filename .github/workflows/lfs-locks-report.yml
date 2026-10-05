@@ -131,10 +131,22 @@ jobs:
             echo "::error::DISCORD_WEBHOOK secret 이 없습니다."
             exit 1
           fi
-          jq -n --arg c "$BODY" '{content: $c, allowed_mentions: {parse: []}}' \
-            | curl -sS --fail-with-body -X POST \
-                -H "Content-Type: application/json" -d @- "$WEBHOOK"
-          echo "게시 완료"
+          # Discord 메시지는 2000자까지라 줄 단위로 나눠 여러 번 보냅니다.
+          # 이모지 등 글자 수 계산 차이를 감안해 1900자에서 자릅니다.
+          jq -n -c --arg c "$BODY" --argjson max 1900 '
+            reduce ($c | split("\n"))[] as $l ([];
+              if length > 0 and ((.[-1] | length) + 1 + ($l | length)) <= $max
+              then .[-1] += "\n" + $l
+              else . + [$l[0:$max]] end)
+            | map(select(test("\\S")))[]
+            | {content: ., allowed_mentions: {parse: []}}' > chunks.jsonl
+
+          while IFS= read -r payload; do
+            printf '%s' "$payload" | curl -sS --fail-with-body -X POST \
+              -H "Content-Type: application/json" -d @- "$WEBHOOK"
+            sleep 1   # 웹훅 속도 제한
+          done < chunks.jsonl
+          echo "게시 완료 ($(wc -l < chunks.jsonl)건)"
 
       - name: 현재 상태 저장
         if: steps.mode.outputs.kind == 'diff'

@@ -61,7 +61,7 @@ protected:
 	TObjectPtr<UStaticMeshComponent> CargoMesh;
 
 	/** E 줍기. 시간 0(짧게 누르기)으로 두고 바꾸지 않는다. */
-	UPROPERTY(VisibleAnywhere, Category = "Item")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
 	TObjectPtr<USPInteractableComponent> Interactable;
 
 	virtual void BeginPlay() override;

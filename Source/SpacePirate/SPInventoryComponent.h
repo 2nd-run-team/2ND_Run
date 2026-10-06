@@ -7,6 +7,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "SPCargo.h"
 #include "SPInventoryComponent.generated.h"
 
 class ASPCargo;
@@ -48,6 +49,18 @@ public:
 
     /** 서버 전용. 화물의 상호작용(짧게 누르기)이 완료되면 부른다. 거리는 상호작용에서 이미 확인했다. */
     void PickUp(ASPCargo* Item);
+
+    /** 그 종류의 물건 중 첫 번째. 없으면 null. 키카드 문, 드릴 설치 조건처럼 "가졌는가"를 볼 때 쓴다. */
+    UFUNCTION(BlueprintPure, Category = "Inventory")
+    ASPCargo* FindItemOfType(ESPItemType Type) const;
+
+    /** 서버 전용. 물건을 칸에서 빼고 없앤다. 드릴 적재·설치처럼 물건이 다른 것으로 바뀌는 완료 처리에 쓴다(MVP안 06장). */
+    UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
+    void ConsumeItem(ASPCargo* Item);
+
+    /** 서버 전용. 등 가방만 그 자리에 떨어뜨리고 나머지 칸은 유지한다. 다운될 때 쓴다(MVP안 06장). */
+    UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
+    void DropBag();
 
     /** 현재 칸의 물건을 앞에 내려놓는다. 칸 번호는 유지한다. */
     UFUNCTION(Server, Reliable)

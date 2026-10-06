@@ -193,4 +193,41 @@ bool FSPInventoryDropThrowTest::RunTest(const FString& Parameters)
     return true;
 }
 
+// 종류로 찾기, 소모하면 칸이 비고 물건이 사라짐, 다운 시 등 가방만 떨어지고 나머지는 유지.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSPInventoryHelpersTest, "SpacePirate.Inventory.Helpers",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FSPInventoryHelpersTest::RunTest(const FString& Parameters)
+{
+    using namespace SPInventoryTests;
+    FTestWorld TestWorld;
+    UWorld* World = TestWorld.World;
+
+    ASPPlayerCharacter* Player = World->SpawnActor<ASPPlayerCharacter>(FVector::ZeroVector, FRotator::ZeroRotator);
+    if (!TestNotNull(TEXT("Player"), Player)) { return false; }
+    USPInventoryComponent* Inventory = Player->GetInventory();
+
+    ASPCargo* Keycard = SpawnItem(World, ESPItemType::Keycard, -100.0);
+    ASPCargo* DrillBag = SpawnItem(World, ESPItemType::DrillBag, 0.0);
+    Inventory->PickUp(Keycard);
+    Inventory->PickUp(DrillBag);
+
+    TestTrue(TEXT("Finds the keycard"), Inventory->FindItemOfType(ESPItemType::Keycard) == Keycard);
+    TestNull(TEXT("No loot bag"), Inventory->FindItemOfType(ESPItemType::LootBag));
+
+    Inventory->DropBag();
+    TestFalse(TEXT("Bag dropped"), Inventory->HasBag());
+    TestFalse(TEXT("Dropped bag is free"), DrillBag->IsCarried());
+    TestTrue(TEXT("Keycard is kept"), Inventory->GetSlots().Contains(Keycard) && Keycard->IsCarried());
+
+    Inventory->DropBag();
+    TestTrue(TEXT("Dropping without a bag keeps the rest"), Inventory->GetSlots().Contains(Keycard));
+
+    Inventory->PickUp(DrillBag);
+    Inventory->ConsumeItem(DrillBag);
+    TestFalse(TEXT("Consumed bag leaves its slot"), Inventory->HasBag());
+    TestTrue(TEXT("Consumed bag is destroyed"), !IsValid(DrillBag));
+    TestTrue(TEXT("Consuming one item keeps the others"), Inventory->GetSlots().Contains(Keycard));
+    return true;
+}
+
 #endif

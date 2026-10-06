@@ -232,6 +232,47 @@ void USPInventoryComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
     Super::EndPlay(EndPlayReason);
 }
 
+ASPCargo* USPInventoryComponent::FindItemOfType(ESPItemType Type) const
+{
+    const TObjectPtr<ASPCargo>* Found = Slots.FindByPredicate(
+        [Type](const TObjectPtr<ASPCargo>& Item) { return IsValid(Item) && Item->GetItemType() == Type; });
+    return Found ? Found->Get() : nullptr;
+}
+
+void USPInventoryComponent::ConsumeItem(ASPCargo* Item)
+{
+    const int32 SlotIndex = Item ? Slots.IndexOfByKey(Item) : INDEX_NONE;
+    if (!ensure(GetOwner() && GetOwner()->HasAuthority()) || SlotIndex == INDEX_NONE)
+    {
+        return;
+    }
+
+    Slots[SlotIndex] = nullptr;
+    // 서버에서는 RepNotify가 자동 호출되지 않는다.
+    OnRep_Inventory();
+    Item->Destroy();
+}
+
+void USPInventoryComponent::DropBag()
+{
+    if (!ensure(GetOwner() && GetOwner()->HasAuthority()))
+    {
+        return;
+    }
+
+    for (TObjectPtr<ASPCargo>& Item : Slots)
+    {
+        if (IsValid(Item) && Item->IsBag())
+        {
+            // 쓰러진 자리에 떨어지도록 등에 붙어 있던 위치에서 물리를 시작한다.
+            Item->DetachFromCarrier(Item->GetActorLocation());
+            Item = nullptr;
+            OnRep_Inventory();
+            return;
+        }
+    }
+}
+
 void USPInventoryComponent::DropAll()
 {
     for (TObjectPtr<ASPCargo>& Item : Slots)

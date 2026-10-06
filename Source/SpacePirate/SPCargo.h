@@ -19,7 +19,7 @@ UENUM(BlueprintType)
 enum class ESPItemType : uint8
 {
 	Keycard,
-	SubdualTool,
+	CCTool,   // CC(군중 제어) 도구. MVP안 05장의 제압 도구
 	SmallLoot,
 	DrillBag, // 등 가방
 	LootBag   // 등 가방

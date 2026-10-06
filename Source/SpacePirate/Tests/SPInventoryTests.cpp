@@ -70,7 +70,7 @@ bool FSPInventorySlotsTest::RunTest(const FString& Parameters)
 
     TArray<ASPCargo*> Items = {
         SpawnItem(World, ESPItemType::Keycard, -150.0),
-        SpawnItem(World, ESPItemType::SubdualTool, -75.0),
+        SpawnItem(World, ESPItemType::CCTool, -75.0),
         SpawnItem(World, ESPItemType::SmallLoot, 0.0),
         SpawnItem(World, ESPItemType::SmallLoot, 75.0),
     };

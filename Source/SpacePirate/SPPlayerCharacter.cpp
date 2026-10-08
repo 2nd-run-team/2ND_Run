@@ -3,12 +3,19 @@
 // 변경 내용: 소유자 HUD·테스트 키와 생존 인원 집계 알림을 연결한다.
 // 작업자: 김세훈 | 2026-10-08 | 다운 캡슐 정렬 수정
 // 변경 내용: 메시 단독 회전을 제거하고 서버의 캡슐 회전에 자세를 맞춘다. 다운 카메라는 캡슐 중심에 둔다.
+// 작업자: 김세훈 | 2026-10-08 | 디버그 도움말 분리
+// 변경 내용: H 토글과 대괄호 페이지 입력, 별도 도움말의 로컬 생성·제거를 연결한다.
+// 작업자: 김세훈 | 2026-10-08 | 도움말 키 안내
+// 변경 내용: 도움말이 꺼져 있거나 개발용 입력이 없는 빌드에서 HUD 키 안내를 숨기도록 조회 함수를 추가한다.
+// 작업자: 김세훈 | 2026-10-08 | 도움말 페이지 설정 변경
+// 변경 내용: 이전·다음 페이지 입력을 대괄호에서 쉼표·마침표로 변경한다.
 
 #include "SPPlayerCharacter.h"
 
 #include "SPGravitySwitch.h"
 #include "SPCharacterMovementComponent.h"
 #include "SPDebug.h"
+#include "SPDebugHelpWidget.h"
 #include "SPInteractorComponent.h"
 #include "SPInteractableComponent.h"
 #include "SPPlayerStatusHUDWidget.h"
@@ -103,6 +110,7 @@ ASPPlayerCharacter::ASPPlayerCharacter(
     Status = CreateDefaultSubobject<USPPlayerStatusComponent>(TEXT("Status"));
     ReviveInteraction = CreateDefaultSubobject<USPInteractableComponent>(TEXT("ReviveInteraction"));
     StatusHUDWidgetClass = USPPlayerStatusHUDWidget::StaticClass();
+    DebugHelpWidgetClass = USPDebugHelpWidget::StaticClass();
 
     JumpMaxCount = 1;
     JumpMaxHoldTime = 0.0f;
@@ -131,6 +139,7 @@ void ASPPlayerCharacter::BeginPlay()
 void ASPPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     RemoveStatusHUD();
+    RemoveDebugHelp();
     if (CrouchLocalPlayer.IsValid() && CrouchMappingContext)
     {
         if (auto* Subsystem = CrouchLocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
@@ -157,6 +166,18 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
     }
 
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
+    if (bEnableDebugHelp && DebugHelpKey.IsValid())
+    {
+        Input->BindDebugKey(FInputChord(DebugHelpKey), IE_Pressed, this, &ASPPlayerCharacter::DebugHelpInput, false);
+        if (DebugHelpKey != EKeys::Comma)
+        {
+            Input->BindDebugKey(FInputChord(EKeys::Comma), IE_Pressed, this, &ASPPlayerCharacter::DebugHelpInput, false);
+        }
+        if (DebugHelpKey != EKeys::Period)
+        {
+            Input->BindDebugKey(FInputChord(EKeys::Period), IE_Pressed, this, &ASPPlayerCharacter::DebugHelpInput, false);
+        }
+    }
     if (bEnableStatusDebugControls)
     {
         Input->BindDebugKey(FInputChord(EKeys::F6), IE_Pressed, this, &ASPPlayerCharacter::DebugStatusKey, false);
@@ -893,6 +914,7 @@ void ASPPlayerCharacter::UnPossessed()
 {
     Interactor->StopInteract();
     RemoveStatusHUD();
+    RemoveDebugHelp();
     Super::UnPossessed();
     QueueTeamStatusRefresh();
 }
@@ -914,7 +936,7 @@ void ASPPlayerCharacter::OnRep_Controller()
 {
     Super::OnRep_Controller();
     if (IsLocallyControlled()) { EnsureStatusHUD(); }
-    else { RemoveStatusHUD(); }
+    else { RemoveStatusHUD(); RemoveDebugHelp(); }
 }
 
 void ASPPlayerCharacter::EnsureStatusHUD()
@@ -926,10 +948,6 @@ void ASPPlayerCharacter::EnsureStatusHUD()
         StatusHUD = CreateWidget<UUserWidget>(PC, StatusHUDWidgetClass);
         if (StatusHUD)
         {
-            if (USPPlayerStatusHUDWidget* DebugHUD = Cast<USPPlayerStatusHUDWidget>(StatusHUD))
-            {
-                DebugHUD->SetShowDebugControls(bEnableStatusDebugControls);
-            }
             StatusHUD->AddToPlayerScreen(10);
             StatusHUD->SetVisibility(ESlateVisibility::HitTestInvisible);
         }
@@ -949,6 +967,56 @@ void ASPPlayerCharacter::DebugStatusKey(FKey Key, FInputActionValue Value)
 {
     if (Key == EKeys::F6) { ServerDebugLifeAction(0); }
     else if (Key == EKeys::F7) { ServerDebugLifeAction(1); }
+}
+
+bool ASPPlayerCharacter::IsDebugHelpAvailable() const
+{
+#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
+    return bEnableDebugHelp && DebugHelpWidgetClass && DebugHelpKey.IsValid();
+#else
+    return false;
+#endif
+}
+
+void ASPPlayerCharacter::ToggleDebugHelp()
+{
+#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
+    if (DebugHelpWidget)
+    {
+        RemoveDebugHelp();
+        return;
+    }
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!bEnableDebugHelp || !DebugHelpWidgetClass || !HasActorBegunPlay()
+        || !PC || !PC->IsLocalController() || !PC->GetLocalPlayer())
+    {
+        return;
+    }
+    DebugHelpWidget = CreateWidget<USPDebugHelpWidget>(PC, DebugHelpWidgetClass);
+    if (DebugHelpWidget)
+    {
+        DebugHelpWidget->Configure(DebugHelpKey, bEnableStatusDebugControls);
+        DebugHelpWidget->AddToPlayerScreen(20);
+    }
+#endif
+}
+
+void ASPPlayerCharacter::RemoveDebugHelp()
+{
+    if (DebugHelpWidget)
+    {
+        DebugHelpWidget->RemoveFromParent();
+        DebugHelpWidget = nullptr;
+    }
+}
+
+void ASPPlayerCharacter::DebugHelpInput(FKey Key, FInputActionValue Value)
+{
+    if (Key == DebugHelpKey) { ToggleDebugHelp(); }
+    else if (DebugHelpWidget)
+    {
+        DebugHelpWidget->ChangePage(Key == EKeys::Period ? 1 : -1);
+    }
 }
 
 void ASPPlayerCharacter::DebugResetKey(FKey Key, FInputActionValue Value) { ServerDebugLifeAction(2); }

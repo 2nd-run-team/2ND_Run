@@ -1,5 +1,9 @@
 // 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 신규 작성
 // 변경 내용: 소유자의 체력 숫자·다운·구조 진행·작전 실패를 표시하는 임시 UMG HUD를 구현한다.
+// 작업자: 김세훈 | 2026-10-08 | 디버그 도움말 분리
+// 변경 내용: 기본 HUD에서 테스트 조작법을 제거하고 기존 BP의 HintText도 숨긴다.
+// 작업자: 김세훈 | 2026-10-08 | 도움말 키 안내
+// 변경 내용: 체력 패널 바로 위에 실제 도움말 키를 옅게 표시하고 도움말을 열면 안내를 숨긴다.
 
 #include "SPPlayerStatusHUDWidget.h"
 
@@ -78,14 +82,23 @@ void USPPlayerStatusHUDWidget::BuildDefaultWidgetTree()
     UCanvasPanel* Root = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("StatusHUDRoot"));
     WidgetTree->RootWidget = Root;
 
+    UVerticalBox* Layout = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("StatusLayout"));
+    UCanvasPanelSlot* LayoutSlot = Root->AddChildToCanvas(Layout);
+    LayoutSlot->SetAnchors(FAnchors(0.0f, 1.0f));
+    LayoutSlot->SetAlignment(FVector2D(0.0f, 1.0f));
+    LayoutSlot->SetPosition(FVector2D(28.0f, -28.0f));
+    LayoutSlot->SetAutoSize(true);
+
+    HelpHintText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("HelpHintText"));
+    SetTextStyle(HelpHintText, 13, FLinearColor(0.68f, 0.75f, 0.81f, 0.70f));
+    HelpHintText->SetShadowColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.45f));
+    HelpHintText->SetShadowOffset(FVector2D(1.0f, 1.0f));
+    Layout->AddChildToVerticalBox(HelpHintText)->SetPadding(FMargin(20.0f, 0.0f, 0.0f, 8.0f));
+
     UBorder* Panel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("StatusPanel"));
     Panel->SetBrushColor(FLinearColor(0.015f, 0.026f, 0.040f, 0.90f));
     Panel->SetPadding(FMargin(20.0f, 16.0f));
-    UCanvasPanelSlot* PanelSlot = Root->AddChildToCanvas(Panel);
-    PanelSlot->SetAnchors(FAnchors(0.0f, 1.0f));
-    PanelSlot->SetAlignment(FVector2D(0.0f, 1.0f));
-    PanelSlot->SetPosition(FVector2D(28.0f, -28.0f));
-    PanelSlot->SetAutoSize(true);
+    Layout->AddChildToVerticalBox(Panel);
 
     USizeBox* Sizing = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("StatusPanelSize"));
     Sizing->SetWidthOverride(340.0f);
@@ -108,7 +121,6 @@ void USPPlayerStatusHUDWidget::BuildDefaultWidgetTree()
     StateText = AddRow(TEXT("StateText"), 18, HealthyColor, true);
     RescueText = AddRow(TEXT("RescueText"), 15, HealthyColor);
     TeamText = AddRow(TEXT("TeamText"), 13, QuietColor);
-    HintText = AddRow(TEXT("HintText"), 12, QuietColor);
 
     FailureText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("FailureText"));
     SetTextStyle(FailureText, 28, DownedColor, true);
@@ -180,18 +192,18 @@ void USPPlayerStatusHUDWidget::RefreshDisplay()
 
     if (HintText)
     {
-        bool bDisplayKeys = false;
-#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
-        bDisplayKeys = bShowDebugControls;
-#endif
-        HintText->SetVisibility(bDisplayKeys ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-        if (bDisplayKeys)
-        {
-            const bool bIsHost = GetOwningPlayer() && GetOwningPlayer()->HasAuthority();
-            HintText->SetText(bIsHost
-                ? NSLOCTEXT("PlayerStatusHUD", "HostKeys", "F6  -25 HP     F7  Down\nShift+F7  Reset all players (host)")
-                : NSLOCTEXT("PlayerStatusHUD", "ClientKeys", "F6  -25 HP     F7  Down\nThe host can press Shift+F7 to reset all players."));
-        }
+        HintText->SetText(FText::GetEmpty());
+        HintText->SetVisibility(ESlateVisibility::Collapsed);
+    }
+
+    if (HelpHintText)
+    {
+        const bool bShowHelpHint = Player && Player->IsDebugHelpAvailable() && !Player->IsDebugHelpOpen();
+        HelpHintText->SetText(bShowHelpHint
+            ? FText::Format(NSLOCTEXT("PlayerStatusHUD", "OpenDebugHelp", "{0}  디버그 도움말 열기"),
+                Player->GetDebugHelpKey().GetDisplayName())
+            : FText::GetEmpty());
+        HelpHintText->SetVisibility(bShowHelpHint ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
     }
 
     if (FailureText)

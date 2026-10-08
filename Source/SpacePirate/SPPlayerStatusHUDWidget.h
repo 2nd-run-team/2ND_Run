@@ -2,6 +2,10 @@
 
 // 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 신규 작성
 // 변경 내용: Widget BP로 외형을 교체할 수 있는 임시 상태 HUD와 표시 항목을 정의한다.
+// 작업자: 김세훈 | 2026-10-08 | 디버그 도움말 분리
+// 변경 내용: 기본 HUD의 조작 안내를 없애고 기존 BP의 HintText·함수 참조만 호환용으로 보존한다.
+// 작업자: 김세훈 | 2026-10-08 | 도움말 키 안내
+// 변경 내용: 체력 패널 위에 옅게 표시할 도움말 열기 안내 TextBlock을 추가한다.
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -17,9 +21,10 @@ class SPACEPIRATE_API USPPlayerStatusHUDWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-    /** 테스트 키가 실제로 활성화된 캐릭터만 힌트를 보인다. */
-    UFUNCTION(BlueprintCallable, Category = "Status|HUD")
-    void SetShowDebugControls(bool bShow) { bShowDebugControls = bShow; }
+    /** 기존 BP 호환용. 디버그 조작법은 이제 SPDebugHelpWidget에 표시한다. */
+    UFUNCTION(BlueprintCallable, Category = "Status|HUD", meta = (DeprecatedFunction,
+        DeprecationMessage = "Debug controls are now shown in SPDebugHelpWidget."))
+    void SetShowDebugControls(bool bShow) {}
 
     /** BP 위젯에서도 같은 복제 상태를 읽을 수 있다. HUD 자체에는 게임 상태를 저장하지 않는다. */
     UFUNCTION(BlueprintPure, Category = "Status|HUD")
@@ -44,6 +49,9 @@ protected:
     TObjectPtr<UTextBlock> TeamText;
 
     UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Status|HUD")
+    TObjectPtr<UTextBlock> HelpHintText;
+
+    UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Status|HUD")
     TObjectPtr<UTextBlock> HintText;
 
     UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Status|HUD")
@@ -53,5 +61,4 @@ private:
     void BuildDefaultWidgetTree();
     void RefreshDisplay();
 
-    bool bShowDebugControls = false;
 };

@@ -4,6 +4,10 @@
 // 변경 내용: 상태·구조 컴포넌트, 다운 이벤트, 임시 자세·HUD 설정, 테스트 입력과 생존 인원 집계 연결을 선언한다.
 // 작업자: 김세훈 | 2026-10-08 | 다운 캡슐 정렬 수정
 // 변경 내용: 임시 다운 자세 설정이 메시 단독 회전 대신 캡슐과 몸을 함께 눕히도록 설명을 갱신한다.
+// 작업자: 김세훈 | 2026-10-08 | 디버그 도움말 분리
+// 변경 내용: 상태 HUD와 독립된 도움말 클래스·토글 키 설정과 로컬 입력·수명 관리를 추가한다.
+// 작업자: 김세훈 | 2026-10-08 | 도움말 키 안내
+// 변경 내용: HUD에서 실제 도움말 키와 사용 가능·열림 상태를 조회할 수 있게 한다.
 
 // 역할: 입력과 로컬 카메라를 관리한다. 실제 이동/몸 회전/예측은 SPCharacterMovementComponent가 담당한다.
 // NOTICE [TEMP-GRAVITY-SWITCH]: 정식 장치 도입 후 FindGravitySwitchInView/ServerUseGravitySwitch와
@@ -27,6 +31,7 @@ class USceneComponent;
 class USPInventoryComponent;
 class USPInteractorComponent;
 class USPInteractableComponent;
+class USPDebugHelpWidget;
 class UUserWidget;
 struct FInputActionValue;
 
@@ -63,6 +68,19 @@ public:
 
     /** 피해/다운 시험 입력은 개발 빌드에서만 사용한다. */
     bool AreStatusDebugControlsEnabled() const { return bEnableStatusDebugControls; }
+
+    /** 개발 빌드의 로컬 도움말. HUD 표시 여부와 무관하며 다운 중에도 열고 닫을 수 있다. */
+    UFUNCTION(BlueprintCallable, Category = "Player|Debug Help")
+    void ToggleDebugHelp();
+
+    UFUNCTION(BlueprintPure, Category = "Player|Debug Help")
+    FKey GetDebugHelpKey() const { return DebugHelpKey; }
+
+    UFUNCTION(BlueprintPure, Category = "Player|Debug Help")
+    bool IsDebugHelpAvailable() const;
+
+    UFUNCTION(BlueprintPure, Category = "Player|Debug Help")
+    bool IsDebugHelpOpen() const { return DebugHelpWidget != nullptr; }
 
     virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
     virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
@@ -144,6 +162,17 @@ protected:
     /** F6 피해 25, F7 다운, Shift+F7 호스트의 전체 초기화. Shipping/Test 빌드에서는 동작하지 않는다. */
     UPROPERTY(EditDefaultsOnly, Category = "Player|Status|Debug")
     bool bEnableStatusDebugControls = true;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Player|Debug Help")
+    bool bEnableDebugHelp = true;
+
+    /** 기본 H. F1~F5 등 언리얼 기본 디버그 키와 겹치지 않는 키를 사용한다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Player|Debug Help")
+    FKey DebugHelpKey = EKeys::H;
+
+    /** SPDebugHelpWidget을 상속한 BP에서 안내 목록과 외형을 수정할 수 있다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Player|Debug Help")
+    TSubclassOf<USPDebugHelpWidget> DebugHelpWidgetClass;
 
     /** 캡슐과 몸을 함께 눕히는 임시 자세와 낮은 카메라. 정식 다운 처리로 교체할 때 끈다. */
     UPROPERTY(EditDefaultsOnly, Category = "Player|Status|Presentation")
@@ -229,6 +258,8 @@ private:
     void HandleLifeStateChanged(ESPPlayerLifeState NewState);
     void EnsureStatusHUD();
     void RemoveStatusHUD();
+    void RemoveDebugHelp();
+    void DebugHelpInput(FKey Key, FInputActionValue Value);
     void DebugStatusKey(FKey Key, FInputActionValue Value);
     void DebugResetKey(FKey Key, FInputActionValue Value);
     void QueueTeamStatusRefresh();
@@ -238,6 +269,9 @@ private:
 
     UPROPERTY(Transient)
     TObjectPtr<UUserWidget> StatusHUD;
+
+    UPROPERTY(Transient)
+    TObjectPtr<USPDebugHelpWidget> DebugHelpWidget;
 
     bool bAppliedDownState = false;
     bool bDropHeld = false;

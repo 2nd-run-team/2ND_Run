@@ -8,12 +8,16 @@ Editor 타깃을 빌드한 뒤 `Lvl_SPTestMap`에서 Listen Server, 플레이어
 
 | 조작 | 결과 |
 | --- | --- |
+| H | 디버그 조작 도움말 열기/닫기 |
+| , / . | 도움말의 이전/다음 페이지 (항목이 10개를 넘을 때) |
 | F6 | 자신에게 피해 25 적용 |
 | F7 | 자신을 다운 |
 | 동료를 바라보고 E 유지 | 4초 후 동료를 최대 체력의 30%로 구조 |
 | Shift+F7 | 호스트가 모든 플레이어의 체력과 작전 실패 상태 초기화 |
 
 테스트 키는 Development에서만 동작하며 `Enable Status Debug Controls`로 끌 수 있다. 초기화는 체력과 작전 실패 상태만 초기화한다. 가방, 경비의 신원 기억, 레벨 배치를 되돌리려면 PIE를 다시 시작한다.
+
+기본 HUD에는 개별 디버그 조작법 대신 체력 패널 바로 위에 `H  디버그 도움말 열기`만 옅게 표시한다. 도움말을 열면 이 안내는 숨기고, 닫으면 다시 표시한다. 설정한 키가 바뀌면 안내도 바뀌며 도움말이 비활성화된 경우에는 표시하지 않는다. H로 여는 도움말은 상태 HUD와 별도 위젯이며, 다운 중이나 상태 HUD를 끈 상태에서도 사용할 수 있다. 도움말은 게임을 멈추거나 마우스·이동 입력을 바꾸지 않는다. 플레이어 BP의 `Player > Debug Help`에서 토글 키, 사용 여부와 위젯 클래스를 설정한다. 기본 H는 언리얼의 F1~F5 화면 디버그 단축키와 충돌하지 않도록 골랐다. 키를 바꿀 때 기존 게임/에디터 입력과 페이지 이동용 쉼표·마침표 키를 피한다.
 
 다운 시 이동과 상호작용, 물건 조작이 중단되고 등 가방만 떨어진다. 키카드와 도구는 유지한다. 구조자가 E를 놓거나 시작 위치에서 5cm보다 멀리 이동하거나 다운되면 구조를 취소한다. 거리 이탈과 벽에 의한 차단도 취소 조건이다. 구조 진행은 보존하지 않으며 한 명만 구조할 수 있다.
 
@@ -26,7 +30,8 @@ Editor 타깃을 빌드한 뒤 `Lvl_SPTestMap`에서 Listen Server, 플레이어
 - 서버의 일반 `Apply Damage`를 사용하면 상태 컴포넌트가 피해를 받는다. 컴포넌트의 `ApplyDamage`와 `ResetForStage`도 서버 전용이다.
 - `GetStatusComponent`, 체력 조회 함수, `IsDowned`를 통해 상태를 읽는다. 도구 등 새 행동을 추가할 때 서버에서도 다운 여부를 확인한다.
 - `OnHealthChanged`, `OnLifeStateChanged`에 UI와 표현을 연결한다. `LifeState`는 상태 컴포넌트 안에서 활동/다운을 나타내는 하위 상태다.
-- 숫자 HUD는 `USPPlayerStatusHUDWidget`의 기본 UMG 레이아웃이다. Widget BP를 상속해 플레이어의 `Status HUD Widget Class`에 지정할 수 있다. `HealthText`, `StateText`, `RescueText`, `TeamText`, `HintText`, `FailureText`라는 TextBlock을 두면 기본 표시 로직을 사용한다. `Show Status Debug HUD`로 표시를 끈다.
+- 숫자 HUD는 `USPPlayerStatusHUDWidget`의 기본 UMG 레이아웃이다. Widget BP를 상속해 플레이어의 `Status HUD Widget Class`에 지정할 수 있다. `HealthText`, `StateText`, `RescueText`, `TeamText`, `HelpHintText`, `FailureText`라는 TextBlock을 두면 기본 표시 로직을 사용한다. 이전 BP에 남은 `HintText`는 숨긴다. `Show Status Debug HUD`로 표시를 끈다.
+- 도움말 항목을 추가하려면 `SPDebugHelpWidget`을 상속한 Widget BP의 Class Defaults에서 `Help Entries`를 편집하고 플레이어의 `Debug Help Widget Class`에 지정한다. 각 항목에 분류, 키, 설명, 호스트 전용 여부를 적는다. `Requires Status Debug Controls`는 F6/F7 같은 체력 시험 키에만 체크한다. 항목은 10개씩 나뉘며 실제 키 기능은 해당 기능 코드/BP에서 별도로 구현해야 한다. 목록만 바꾸려면 Designer를 비워 기본 외형을 사용해도 된다. 외형까지 바꾸면 `HelpRows` VerticalBox와 `PageText`, `CloseText` TextBlock으로 기본 갱신을 재사용한다.
 - 임시 다운 자세는 서버에서 루트 캡슐을 옆으로 회전시켜 메시와 구조 판정 영역을 함께 눕힌다. 지상에서는 캡슐 높이 차이만큼 충돌 검사하며 내리고, 구조 후 기존 중력 복구 경로가 캡슐을 다시 세운다. 회전 경로가 막히면 반대쪽을 시도하며 양쪽 모두 막히면 현재 방향을 유지한다. 무중력에서 구조되면 기존 무중력 회전 경로로 시선을 따라 복귀한다.
 - 애니메이션은 이동용 루트 캡슐을 자동으로 눕히지 않는다. 정식 다운 애니메이션을 도입할 때는 `Use Temporary Down Pose`와 플레이어의 `On Status State Changed` 이벤트를 이용해 캡슐·메시 처리를 함께 설계한다.
 
@@ -57,3 +62,15 @@ PIE 결과는 `Saved/PlayerStatus/pie-verification.json`, 화면은 같은 폴�
 최종 Development Editor 빌드, 전체 자동 검사 23개, 2인 PIE 검사 35개가 통과했다. 빈손 상태에서 머리와 몸통을 조준한 구조, `BP_SPSmallLoot`를 손에 든 상태에서 머리를 조준한 구조, 서버·소유 클라이언트·원격 화면의 캡슐/몸 방향, 구조 후 직립, 즉시 초기화 후 반복 다운을 확인했다. 화물 줍기 우선순위와 화물 충돌 코드는 이번 수정에서 바꾸지 않았다.
 
 자동 검사 결과는 `Saved/PlayerStatus/CapsuleAutomation/index.json`, PIE 결과는 `Saved/PlayerStatus/pie-verification.json`, 화물 운반 중 구조 화면은 `Saved/PlayerStatus/revive-capsule-cargo.png`에 있다. 양쪽 회전 경로가 모두 막힌 좁은 공간에서는 현재 캡슐 방향을 유지하는 임시 처리다.
+
+### 2026년 10월 8일 디버그 도움말 분리
+
+기본 HUD에서 F6/F7 안내를 제거하고 `SPDebugHelpWidget`으로 옮겼다. `SPPlayerCharacter::ToggleDebugHelp()`가 로컬 플레이어 화면에만 생성하며, H로 닫거나 캐릭터의 소유권이 바뀌면 제거한다. 상태 HUD와 별개여서 상태 HUD를 교체하거나 숨겨도 사용할 수 있다. 입력 모드·마우스 포커스·게임 일시정지는 바꾸지 않는다. Shipping/Test에서는 토글 입력과 생성 경로가 동작하지 않는다.
+
+Development Editor 빌드와 프로젝트 파일 재생성이 완료됐다. 2인 PIE에서 기본 숨김, HUD의 조작 안내 제거, 호스트/클라이언트별 열기·닫기, 다운 중 열기, 반복 토글, 상태 HUD 없이 열기, 9개 항목의 페이지 이동을 확인했다. 도움말 토글·페이지 검증은 BP에 노출된 함수를 호출했고, 실제 화면도 캡처해 확인했다. 기존 상태 검사 35개와 도움말 검사 13개를 합한 최종 48개 항목이 통과했다. 검사 중 렌더링 부하를 낮췄으며 원격 이동 취소는 최대 1.5초 동안 서버 결과를 기다리도록 임시 검증 스크립트에서 처리했다. 게임의 이동·구조 규칙은 변경하지 않았다.
+
+이번 결과는 `Saved/DebugHelp/pie-verification.json`, 화면은 같은 폴더의 `debug-help-open.png`와 `debug-help-page-2.png`에 있다. 검증을 위한 추가 안내 6개는 실행 중인 임시 위젯에만 넣었으며 BP나 맵에 저장하지 않았다.
+
+같은 날 체력 패널 바로 위에 도움말 열기 안내를 추가했다. 13pt의 옅은 글씨와 작은 그림자를 사용하며, 안내를 숨겨도 체력 패널의 위치는 유지된다. 빌드 및 2인 PIE에서 양쪽 안내 표시, 체력 표시 유지, 도움말을 연 플레이어의 안내만 숨김, 닫은 뒤 안내 복귀까지 4개 항목을 확인했다. 결과와 화면은 `Saved/DebugHelpHint/`에 있다.
+
+이후 페이지당 표시 개수를 10개로 늘리고 이전/다음 키를 쉼표/마침표로 변경했다. 실제 `WBP_DebugHelp`를 사용한 PIE에서 10개일 때 한 페이지, 11개일 때 두 페이지, 새 키 안내와 페이지 범위 제한 등 7개 항목을 확인했다. 검증용 목록은 실행 중 위젯에서만 변경했으며 BP 에셋은 저장하지 않았다. 결과와 화면은 `Saved/DebugHelpPaging/`에 있다.

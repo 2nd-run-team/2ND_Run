@@ -9,6 +9,8 @@
 
 일반 경비·잠입 기능은 [잠입 시스템 구현 및 유지보수 가이드](Stealth.md)를 참고한다.
 기능별 소스·에셋, 서버 판정 흐름, 디테일 설정, 애니메이션, 멀티플레이와 검사 방법을 정리했다.
+사건·익명 조사·범죄 관찰·레이저까지 확장한 현재 기능은 [잠입·보안 팀 인수인계](../Stealth/README.md)에서 시작한다.
+이 문서의 열차 환경 연결과 별개로, 잠입 시험장은 `Lvl_SPStealthTest`에서 실행한다.
 
 | 대상 | 위치 / 역할 |
 |---|---|
@@ -52,7 +54,7 @@
 - `BP_SPTrainPlayerController`의 부모: 팀 `BP_SPPlayerController`
 - 기차/행성 GameMode의 Pawn: 팀 `BP_SPPlayerCharacter`
 - 기차/행성 PlayerController의 입력: 팀 `IMC_SPPlayer`
-- 열차 GameState와 행성 하늘 GameState, 서버 권한 로직은 유지
+- 열차 GameState와 행성 하늘 GameState, 서버 권한 로직은 유지. 공통 부모는 `ASPGameState → BP_SPTrainGameState → BP_SPPlanetTrainGameState`로 연결하여 체력/작전 실패와 보안 복제를 지원한다. [통합 검증](../Stealth/MergeReview.md) 참고
 
 최초 레벨 이주에서는 팀의 공용 캐릭터, 컨트롤러, 입력 에셋, C++ 소스를 수정하지 않았다.
 이후 잠입 기능 작업에서 공용 플레이어와 이동 컴포넌트 C++에 앉기를 추가했다.

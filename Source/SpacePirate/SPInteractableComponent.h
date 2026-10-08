@@ -11,6 +11,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "SPStealthTypes.h"
 #include "SPInteractableComponent.generated.h"
 
 class APawn;
@@ -62,6 +63,15 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
     FText Prompt;
 
+    /** 범죄 작업만 명시적으로 지정한다. 일반 줍기·가방 운반 등에 사용하는 상호작용은 None을 유지한다. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interact|Crime") ESPCrimeKind CrimeKind = ESPCrimeKind::None;
+    /** false: 홀드 작업 중 지속 범죄. true: 성공 완료 시점의 시야로 순간 범죄를 판정한다. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interact|Crime") bool bInstantCrime = false;
+    UPROPERTY(BlueprintAssignable, Category="Interact") FSPInteractCompletedSignature OnStarted;
+    UPROPERTY(BlueprintAssignable, Category="Interact") FSPInteractCompletedSignature OnCancelled;
+    FSPInteractCompletedNative OnStartedNative;
+    FSPInteractCompletedNative OnCancelledNative;
+
     /** 서버에서만 호출된다. 짧게 누르는 대상은 누른 즉시 호출된다. */
     UPROPERTY(BlueprintAssignable, Category = "Interact")
     FSPInteractCompletedSignature OnCompleted;
@@ -99,6 +109,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 
 private:
     void Finish(bool bCompleted);
@@ -122,6 +133,9 @@ private:
 
     /** 서버 전용. 시작할 때 받은 상호작용 거리. */
     float AllowedDistance = 0.0f;
+    FGuid CrimeRegistration;
+    bool bTransitioning = false;
+    bool bStartedWithController = false;
 
     /** 서버 전용. 구조자가 시작한 위치. */
     FVector UserStartLocation = FVector::ZeroVector;

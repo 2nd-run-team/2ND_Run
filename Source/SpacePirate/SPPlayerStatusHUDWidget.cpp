@@ -116,7 +116,7 @@ void USPPlayerStatusHUDWidget::BuildDefaultWidgetTree()
     };
 
     UTextBlock* Title = AddRow(TEXT("StatusTitle"), 12, QuietColor, true);
-    Title->SetText(NSLOCTEXT("PlayerStatusHUD", "Title", "PLAYER VITALS  /  PROTOTYPE"));
+    Title->SetText(NSLOCTEXT("PlayerStatusHUD", "Title", "플레이어 상태 / 임시 표시"));
     HealthText = AddRow(TEXT("HealthText"), 32, HealthyColor, true);
     StateText = AddRow(TEXT("StateText"), 18, HealthyColor, true);
     RescueText = AddRow(TEXT("RescueText"), 15, HealthyColor);
@@ -127,7 +127,7 @@ void USPPlayerStatusHUDWidget::BuildDefaultWidgetTree()
     FailureText->SetJustification(ETextJustify::Center);
     FailureText->SetShadowColorAndOpacity(FLinearColor::Black);
     FailureText->SetShadowOffset(FVector2D(2.0f, 2.0f));
-    FailureText->SetText(NSLOCTEXT("PlayerStatusHUD", "OperationFailed", "OPERATION FAILED\nAll players are down"));
+    FailureText->SetText(NSLOCTEXT("PlayerStatusHUD", "OperationFailed", "작전 실패\n모든 플레이어가 쓰러졌습니다"));
     UCanvasPanelSlot* FailureSlot = Root->AddChildToCanvas(FailureText);
     FailureSlot->SetAnchors(FAnchors(0.5f, 0.0f));
     FailureSlot->SetAlignment(FVector2D(0.5f, 0.0f));
@@ -145,19 +145,19 @@ void USPPlayerStatusHUDWidget::RefreshDisplay()
     if (HealthText)
     {
         HealthText->SetText(Life
-            ? FText::Format(NSLOCTEXT("PlayerStatusHUD", "Health", "HP {0} / {1}"),
+            ? FText::Format(NSLOCTEXT("PlayerStatusHUD", "Health", "체력 {0} / {1}"),
                 FText::AsNumber(DisplayHealth(Life->GetHealth())),
                 FText::AsNumber(DisplayHealth(Life->GetMaxHealth())))
-            : NSLOCTEXT("PlayerStatusHUD", "NoHealth", "HP -- / --"));
+            : NSLOCTEXT("PlayerStatusHUD", "NoHealth", "체력 -- / --"));
         HealthText->SetColorAndOpacity(FSlateColor(bDowned ? DownedColor
             : Life && Life->GetHealthPercent() <= 0.3f ? WarningColor : HealthyColor));
     }
 
     if (StateText)
     {
-        StateText->SetText(!Life ? NSLOCTEXT("PlayerStatusHUD", "NoPlayer", "WAITING FOR PLAYER")
-            : bDowned ? NSLOCTEXT("PlayerStatusHUD", "Downed", "DOWNED")
-            : NSLOCTEXT("PlayerStatusHUD", "Active", "ACTIVE"));
+        StateText->SetText(!Life ? NSLOCTEXT("PlayerStatusHUD", "NoPlayer", "플레이어 연결 중")
+            : bDowned ? NSLOCTEXT("PlayerStatusHUD", "Downed", "다운 · 구조 대기")
+            : NSLOCTEXT("PlayerStatusHUD", "Active", "활동 중"));
         StateText->SetColorAndOpacity(FSlateColor(bDowned ? DownedColor : HealthyColor));
     }
 
@@ -168,9 +168,9 @@ void USPPlayerStatusHUDWidget::RefreshDisplay()
         {
             const float Progress = Life->GetReviveProgress();
             RescueMessage = Progress > 0.0f
-                ? FText::Format(NSLOCTEXT("PlayerStatusHUD", "BeingRevived", "BEING REVIVED: {0}%"),
+                ? FText::Format(NSLOCTEXT("PlayerStatusHUD", "BeingRevived", "구조 받는 중: {0}%"),
                     FText::AsNumber(FMath::FloorToInt(Progress * 100.0f)))
-                : NSLOCTEXT("PlayerStatusHUD", "WaitForRescue", "A teammate can hold E to revive you.");
+                : NSLOCTEXT("PlayerStatusHUD", "WaitForRescue", "동료가 E를 4초 유지하면 구조할 수 있습니다.");
         }
         else if (Player && Player->GetInteractor() && Player->GetInteractor()->IsHolding())
         {
@@ -185,7 +185,7 @@ void USPPlayerStatusHUDWidget::RefreshDisplay()
     if (TeamText)
     {
         TeamText->SetText(OperationState
-            ? FText::Format(NSLOCTEXT("PlayerStatusHUD", "Team", "ACTIVE CREW  {0} / {1}"),
+            ? FText::Format(NSLOCTEXT("PlayerStatusHUD", "Team", "활동 인원 {0} / {1}"),
                 FText::AsNumber(OperationState->GetActivePlayerCount()),
                 FText::AsNumber(OperationState->GetParticipatingPlayerCount())) : FText::GetEmpty());
     }
@@ -208,7 +208,7 @@ void USPPlayerStatusHUDWidget::RefreshDisplay()
 
     if (FailureText)
     {
-        FailureText->SetText(NSLOCTEXT("PlayerStatusHUD", "OperationFailed", "OPERATION FAILED\nAll players are down"));
+        FailureText->SetText(NSLOCTEXT("PlayerStatusHUD", "OperationFailed", "작전 실패\n모든 플레이어가 쓰러졌습니다"));
         FailureText->SetVisibility(OperationState && OperationState->IsOperationFailed()
             ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
     }

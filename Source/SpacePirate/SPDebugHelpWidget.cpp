@@ -55,7 +55,7 @@ USPDebugHelpWidget::USPDebugHelpWidget(const FObjectInitializer& ObjectInitializ
     FSPDebugHelpEntry Reset = Damage;
     Reset.Category = NSLOCTEXT("SPDebugHelp", "OperationCategory", "작전");
     Reset.Keys = FText::FromString(TEXT("Shift + F7"));
-    Reset.Description = NSLOCTEXT("SPDebugHelp", "Reset", "모든 플레이어의 체력과 작전 실패 상태 초기화");
+    Reset.Description = NSLOCTEXT("SPDebugHelp", "Reset", "모든 플레이어의 체력·작전 실패·발각·경보 초기화");
     Reset.bHostOnly = true;
     HelpEntries.Add(Reset);
 }

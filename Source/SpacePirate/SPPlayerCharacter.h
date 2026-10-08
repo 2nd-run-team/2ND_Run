@@ -30,6 +30,7 @@ class ULocalPlayer;
 class USceneComponent;
 class USPInventoryComponent;
 class USPInteractorComponent;
+class USPStealthActivityComponent;
 class USPInteractableComponent;
 class USPDebugHelpWidget;
 class UUserWidget;
@@ -92,6 +93,7 @@ public:
     USPInventoryComponent* GetInventory() const;
 
     USPInteractorComponent* GetInteractor() const { return Interactor; }
+    UFUNCTION(BlueprintPure, Category="Stealth") USPStealthActivityComponent* GetStealthActivity() const { return StealthActivity; }
 
     /** 진행 바 위젯용. E 길게 누르기의 진행률 0～1, 누르는 중이 아니면 0. */
     UFUNCTION(BlueprintPure, Category = "Interact")
@@ -143,6 +145,9 @@ protected:
         BlueprintReadOnly,
         Category = "Components")
     TObjectPtr<USPInteractorComponent> Interactor;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+    TObjectPtr<USPStealthActivityComponent> StealthActivity;
 
     /** 체력, 피해, 다운과 구조의 규칙. 수치는 이 컴포넌트 Details에서 조정한다. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

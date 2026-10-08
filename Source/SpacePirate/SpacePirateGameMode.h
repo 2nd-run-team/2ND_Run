@@ -17,6 +17,8 @@ class SPACEPIRATE_API ASpacePirateGameMode : public AGameModeBase
 
 public:
 	ASpacePirateGameMode();
+	virtual void InitGameState() override;
+	virtual void GenericPlayerInitialization(AController* C) override;
 
     virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
     virtual void RestartPlayer(AController* NewPlayer) override;
@@ -26,7 +28,9 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Operation")
     void CheckAllPlayersDowned();
 
-    /** 다음 단계/테스트 재시작용. 모든 참가자의 체력과 생존 상태, 작전 실패를 초기화한다. */
+    /** 서버의 전체 회차 초기화: 작업 취소, 체력/생존/작전 실패 복구, 신원/경보/경비 대응 초기화.
+     * 물건 재생성이나 플레이어 위치 이동은 수행하지 않는다.
+     */
     UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Operation")
     void ResetForStage();
 

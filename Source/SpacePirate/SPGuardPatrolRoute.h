@@ -19,7 +19,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Patrol", meta = (MakeEditWidget = "true"))
     TArray<FVector> Points;
 
-    /** 이 시험 구역 안의 미발각 플레이어만 침입자로 확인한다. */
+    /** Legacy authoring bounds only. Detection uses independent ASPRestrictedArea actors. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stealth")
     TObjectPtr<UBoxComponent> RestrictedArea;
 
@@ -29,6 +29,6 @@ public:
     UFUNCTION(BlueprintPure, Category = "Patrol")
     FVector GetPatrolLocation(int32 Index) const;
 
-    UFUNCTION(BlueprintPure, Category = "Stealth")
+    UFUNCTION(BlueprintPure, Category = "Stealth", meta=(DeprecatedFunction,DeprecationMessage="Use SPRestrictedArea. Patrol bounds no longer determine trespass."))
     bool ContainsLocation(FVector Location) const;
 };

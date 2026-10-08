@@ -1,19 +1,21 @@
 # 일반 경비 잠입 시스템 구현 및 유지보수 가이드
 
-작성 기준: 2026-10-05 · `feature/item-interaction` · Unreal Engine 5.8.2.
+작성 기준: 2026-10-08 · `feature/item-interaction` · Unreal Engine 5.8.2.
 이 문서는 팀원이 현재 기능을 실행하고, 동작을 이해하고, 수정할 파일을 찾기 위한 인수인계 자료다. 기획 전체가 아닌 **현재 소스와 저장된 시험 레벨의 구현 범위**를 설명한다.
+
+사건 처리·복제 신원/전체 경보·스테이지 API와 독립 시험 맵은 [현재 구현 상태](../Stealth/ImplementationStatus.md), [서버 API 계약](../Stealth/IncidentAPI.md)을 함께 참고한다. 독립 구역·공통 시야·범죄 등록은 [범죄 목격 계약](../Stealth/CrimeObservation.md), 실제 배치형 레이저는 [레이저 장치 계약](../Stealth/LaserSecurity.md)을 참고한다. 아래 과거 검사 결과는 이력이며 최신 수행 결과는 구현 상태 문서를 기준으로 한다.
 
 ## 구현 범위와 실행 방법
 
-구현한 기능은 Ctrl 유지 앉기, 감속 이동과 앉은 자세, 경비 2명의 걷기 순찰·달리기 추격, 편집 가능한 순찰 경로, 직접 목격, 발소리 방향 확인, 플레이어별 신원 기억과 경보 전달, 마지막 목격 위치 수색, 느낌표와 개발용 시야 표시다.
+구현한 기능은 Ctrl 유지 앉기, 감속 이동과 앉은 자세, 경비 2명의 걷기 순찰·달리기 추격, 편집 가능한 순찰 경로, 직접 목격, 범죄 포장 감지, 익명 소리 조사, 선택적 발소리 방향 확인, 플레이어별 신원 기억과 경보 전달, 마지막 목격 위치 수색, 느낌표와 개발용 시야 표시다.
 
 1. C++을 `Development Editor / Win64`로 빌드한 뒤 프로젝트를 연다. 새 네이티브 클래스가 있으므로 에셋만 받아서는 충분하지 않다.
 2. 콘텐츠 브라우저에서 `/Game/SpacePirate/Maps/Lvl_SPTrainFreight`를 연다. 요청 당시의 `spl_SPTrainFreight` 대신 실제 저장된 이 맵을 사용한다.
 3. 아웃라이너의 `Stealth_DirectSight_SPCarBig` 폴더에서 시험 액터들을 찾는다.
 4. 단일 플레이는 Play, 멀티플레이는 `Number of Players = 2`, `Play As Listen Server`로 실행한다.
-5. 왼쪽 또는 오른쪽 Ctrl을 누른 채 W로 이동한다. 키를 놓으면 일어서기를 요청한다. 서서 경비 뒤로 접근하면 소리에 돌아보고, 이후 실제 시야에 들어오면 발각된다.
+5. 왼쪽 또는 오른쪽 Ctrl을 누른 채 W로 이동한다. 키를 놓으면 일어서기를 요청한다. 일반 이동 발소리는 MVP에서 꺼져 있다. 제한 구역 체류 또는 범죄 작업이 실제 시야에서 1초 유지되면 발각된다.
 
-**앉기는 투명화가 아니다.** 발소리 판정을 피하고 낮은 자세로 이동하지만 몸통이나 상체가 시야에 노출되면 발각된다. 공격·피해, CCTV, 민간인 신고, 전체 경보 UI, 지원 병력, 범죄 행위 판정, 실제 발소리 오디오 재생은 이번 범위에 없다.
+**앉기는 투명화가 아니다.** 낮은 자세로 이동하지만 몸통이나 상체가 시야에 노출되면 발각된다. 사건 처리와 전체 경보/개별 신원 UI는 독립 시험 맵에 추가했다. 공격·피해, 실제 CCTV/민간인/범죄 장치, 지원 병력, 실제 발소리 오디오 재생은 미구현이다.
 
 ## 기능별 파일과 수정 지점
 
@@ -26,9 +28,11 @@
 | 앉은 자세 블렌딩 | [SPCrouchAnimInstance.h](../../Source/SpacePirate/SPCrouchAnimInstance.h), [SPCrouchAnimInstance.cpp](../../Source/SpacePirate/SPCrouchAnimInstance.cpp) | `NativeUpdateAnimation`의 `CrouchAlpha` |
 | 경비 감지·상태·순찰·추격·표시 | [SPGuardCharacter.h](../../Source/SpacePirate/SPGuardCharacter.h), [SPGuardCharacter.cpp](../../Source/SpacePirate/SPGuardCharacter.cpp) | `CanSeePlayer`, `CanHearPlayer`, `UpdateSight`, `UpdateHearing`, `UpdateBehavior`, `ReceiveSighting`, `DrawVision` |
 | 경비 걷기·달리기 애니메이션 값 | [SPGuardAnimInstance.h](../../Source/SpacePirate/SPGuardAnimInstance.h), [SPGuardAnimInstance.cpp](../../Source/SpacePirate/SPGuardAnimInstance.cpp) | `NativeUpdateAnimation`의 속도·방향·재생 배율 계산 |
-| 순찰 지점과 침입 구역 | [SPGuardPatrolRoute.h](../../Source/SpacePirate/SPGuardPatrolRoute.h), [SPGuardPatrolRoute.cpp](../../Source/SpacePirate/SPGuardPatrolRoute.cpp) | `Points`, `bLoop`, `RestrictedArea`, `GetPatrolLocation`, `ContainsLocation` |
-| 플레이어별 신원 기억과 동료 호출 | [SPGuardAlertSubsystem.h](../../Source/SpacePirate/SPGuardAlertSubsystem.h), [SPGuardAlertSubsystem.cpp](../../Source/SpacePirate/SPGuardAlertSubsystem.cpp) | `IdentifiedPlayers`, `IsIdentified`, `ReportSighting` |
-| 감지 회귀 검사 | [SPGuardTests.cpp](../../Source/SpacePirate/Tests/SPGuardTests.cpp) | `SpacePirate.Stealth` 자동 검사 4개 |
+| 순찰 지점(구역 판정과 독립) | [SPGuardPatrolRoute.h](../../Source/SpacePirate/SPGuardPatrolRoute.h), [SPGuardPatrolRoute.cpp](../../Source/SpacePirate/SPGuardPatrolRoute.cpp) | `Points`, `bLoop`, `GetPatrolLocation`. 옛 박스는 직렬화 호환용 |
+| 독립 구역/공통 시야/작업 | SPRestrictedArea.*, SPStealthObserverComponent.*, SPStealthActivityComponent.* | FindAtLocation, 눈 Transform, SamplePlayer, ReportInstantCrime, BeginCrime/EndCrime |
+| 사건 처리와 동료 호출 | [SPGuardAlertSubsystem.h](../../Source/SpacePirate/SPGuardAlertSubsystem.h), [SPGuardAlertSubsystem.cpp](../../Source/SpacePirate/SPGuardAlertSubsystem.cpp) | `SubmitDirectIncident`, `SubmitAnonymousIncident`, `IsIdentified`, `ReportSighting`, 스테이지 API |
+| 복제 신원/전체 경보 원본 | [SPStealthPlayerStateComponent.h](../../Source/SpacePirate/SPStealthPlayerStateComponent.h), [SPStealthGameStateComponent.h](../../Source/SpacePirate/SPStealthGameStateComponent.h) | 기존 PlayerState/GameState에 추가. Subsystem에서 별도 신원 집합을 저장하지 않음 |
+| 감지 회귀 검사 | [SPGuardTests.cpp](../../Source/SpacePirate/Tests/SPGuardTests.cpp) | 기존 감지 4개 + 스테이지/누락 신원 1개. 사건 정책은 SPStealthIncidentTests.cpp의 별도 5개 |
 
 ### 레벨과 애니메이션 에셋
 
@@ -39,7 +43,7 @@
 | [ABP_SPGuardLocomotion.uasset](../../Content/SpacePirate/Stealth/Animation/ABP_SPGuardLocomotion.uasset) | 부모 `USPGuardAnimInstance`. 공용 `BS_Idle_Walk_Run`을 속도와 방향으로 재생 |
 | [ABP_SPCrouchPostProcess.uasset](../../Content/SpacePirate/Stealth/Animation/ABP_SPCrouchPostProcess.uasset) | 부모 `USPCrouchAnimInstance`. 기존 애니메이션 결과에 Manny용 앉은 자세 적용 |
 
-기존 에셋 중 [BP_SPPlayerCharacter](../../Content/SpacePirate/Player/Blueprints/BP_SPPlayerCharacter.uasset), [ABP_CargoCarry](../../Content/SpacePirate/Cargo/ABP_CargoCarry.uasset), [SKM_Manny_Simple](../../Content/Characters/Mannequins/Meshes/SKM_Manny_Simple.uasset), [BS_Idle_Walk_Run](../../Content/Characters/Mannequins/Anims/Unarmed/BS_Idle_Walk_Run.uasset)은 기반·참조 에셋이다. 이번 작업에서 이 바이너리들을 수정하지 않았다. 반면 **공용 플레이어와 이동 컴포넌트의 C++은 수정했으므로** 다른 맵의 플레이어에도 앉기 기능이 적용될 수 있다.
+기존 에셋 중 [BP_SPPlayerCharacter](../../Content/SpacePirate/Player/Blueprints/BP_SPPlayerCharacter.uasset), [ABP_SPCargoCarry](../../Content/SpacePirate/Cargo/ABP_SPCargoCarry.uasset), [SKM_Manny_Simple](../../Content/Characters/Mannequins/Meshes/SKM_Manny_Simple.uasset), [BS_Idle_Walk_Run](../../Content/Characters/Mannequins/Anims/Unarmed/BS_Idle_Walk_Run.uasset)은 기반·참조 에셋이다. 초기 잠입 구현에서는 이 바이너리들을 수정하지 않았으며, 이후 원격 통합에서 운반 애니메이션 이름만 SP 규칙에 맞췄다. 기존 경로는 리디렉터로 유지한다([명명 규칙](../AssetNaming.md)). 반면 **공용 플레이어와 이동 컴포넌트의 C++은 수정했으므로** 다른 맵의 플레이어에도 앉기 기능이 적용될 수 있다.
 
 ### 제작 및 검사 스크립트
 
@@ -59,7 +63,7 @@
 
 | 아웃라이너 이름 | 현재 배치 및 용도 |
 |---|---|
-| `Stealth_Big_PatrolRoute_EditPoints` | 차량 원점. 순찰 지점 4개와 침입 구역 보유 |
+| `Stealth_Big_PatrolRoute_EditPoints` | 차량 원점. 순찰 지점 4개. 제한 판정은 별도 액터 |
 | `Stealth_Big_Guard_1` | 로컬 `(350,-630,98)`, Yaw 180°, 시작 지점 0 |
 | `Stealth_Big_Guard_2` | 로컬 `(-350,630,98)`, Yaw 0°, 시작 지점 2 |
 | `Stealth_Big_CenterCover` | 로컬 `(0,0,130)`, 크기 약 `90 × 800 × 260`cm. 이동 및 Visibility 차단 |
@@ -72,15 +76,16 @@
 | 디테일 위치 | 설정 이름 | 현재 기본값과 의미 |
 |---|---|---|
 | 경로 / Patrol | `Points`, `Loop` | 4개 지점. Loop 켜짐은 순환, 꺼짐은 양 끝에서 반전하여 왕복 |
-| 경로 / RestrictedArea 컴포넌트 | `Box Extent` | `(530,880,300)`cm. 전체 크기가 아닌 반크기 |
+| Restricted_Area_Main / Volume 컴포넌트 | `Box Extent` | `(530,880,300)`cm. 전체 크기가 아닌 반크기 |
 | 경비 / Guard / Patrol | `Patrol Route`, `Start Point Index`, `Patrol Wait Time` | 배치된 경로 참조, 0 또는 2, 지점 대기 1.2초 |
 | 경비 / Guard / Movement | `Patrol Speed`, `Chase Speed` | 170 / 340cm/s |
 | 경비 / Guard / Sight | `Sight Distance`, `Sight Angle`, `Vertical Sight Angle` | 1200cm, 전체 수평각 90°, 전체 수직각 100°. 좌우 반각은 각각 45° |
 | 경비 / Guard / Sight | `Confirm Sight Time` | 미발각 플레이어를 연속 목격해야 하는 시간 1초 |
-| 경비 / Guard / Hearing | `Hear Footsteps`, `Hearing Distance`, `Minimum Footstep Speed` | 켜짐, 650cm, 수평 이동속도 하한 80cm/s |
+| 경비 / Guard / Hearing | `Hear Footsteps`, `Hearing Distance`, `Minimum Footstep Speed` | **꺼짐(MVP)**, 선택 활성 시 650cm·속도 하한 80cm/s |
 | 경비 / Guard / Hearing | `Listen Time`, `Hearing Turn Speed` | 마지막 소리 확인 후 2초, 회전속도 240°/s |
 | 경비 / Guard / Search | `Search Time`, `Lost Target Timeout` | 현장 수색 5초, 마지막 목격 후 최대 12초 |
 | 경비 / Guard / Alert | `Alert Group` | 배치 경비는 `FreightBig_DirectSight`. 네이티브 기본값은 `FreightGuards` |
+| 경비 / Guard / Alert | `Identity Scope` | 기본 `StageSecurity`. 신원을 공유하는 범위. 실제 출동 그룹인 AlertGroup과 독립 |
 | 경비 / Guard / Debug | `Show Vision` | 켜짐. 개발용 시야 표시 |
 | 플레이어 / Character Movement | `Max Walk Speed Crouched`, 앉은 캡슐 높이 | 160cm/s, 캡슐 반높이 56cm |
 | 플레이어 클래스 기본값 / Stealth / Animation | `Crouch Pose Class` | `ABP_SPCrouchPostProcess` |
@@ -93,13 +98,16 @@ BP 기본값과 레벨 인스턴스의 덮어쓰기 값은 다를 수 있다. C+
 
 | 상태 | 행동과 진입 조건 | 화면 표시 |
 |---|---|---|
-| `Patrol` | 경로 지점을 따라 이동. 목표와 소리·시야 의심이 없을 때 | 초록 시야, 머리 위 문자 없음 |
-| `Listening` | 발소리 방향으로 정지 회전. 소리가 갱신되지 않으면 Listen Time 후 순찰 | 노랑 시야, `?` |
-| `Suspicious` | 미발각 플레이어를 연속 목격하며 확인 시간 누적. 이동 정지 | 노랑 시야, `?` |
-| `Pursuing` | 직접 발각 또는 동료의 목격 보고로 특정 플레이어의 마지막 목격 위치 추격 | 빨강 시야, `!` |
-| `Searching` | 시야를 잃고 마지막 위치 근처에 도착하면 정지 회전 수색 | 노랑 시야, `?` |
+| `Patrol` | 경로 지점을 따라 이동. 목표와 소리·시야 의심이 없을 때 | 초록 시야, `PATROL` |
+| `Listening` | 발소리 방향으로 정지 회전. 소리가 갱신되지 않으면 Listen Time 후 순찰 | 노랑 시야, 상태별 텍스트 |
+| `Suspicious` | 미발각 플레이어를 연속 목격하며 확인 시간 누적. 이동 정지 | 노랑 시야, 상태별 텍스트 |
+| `Pursuing` | 직접 발각 또는 동료의 목격 보고로 특정 플레이어의 마지막 목격 위치 추격 | 빨강 시야, `CHASE` |
+| `Searching` | 시야를 잃고 마지막 위치 근처에 도착하면 정지 회전 수색 | 노랑 시야, 상태별 텍스트 |
+| `Investigating` | 범인 없는 사건 스냅샷 위치로 이동. TargetPlayer 없음 | `INVESTIGATE` 청록 |
+| `SceneSearching` | 도착 후 정해진 시간 현장 수색 | `SEARCH SCENE` 파랑 |
+| `MovingToLastSeen` | 시야를 잃은 대상의 마지막 목격 위치로 이동 | `LAST SEEN / MOVE` 주황 |
 
-대표 흐름은 `순찰 → 발소리 방향 확인 → 시야 확인 → 발각 및 동료 호출 → 추격 → 수색 → 순찰`이다. 소리 없이 직접 보아도 시야 확인부터 시작한다. 이미 기억한 플레이어를 다시 보면 확인 시간을 기다리지 않는다.
+대표 흐름은 `순찰 → 범죄/침입 시야 확인 → 발각 및 동료 호출 → 추격 → 수색 → 순찰`이다. 익명 작업 소리는 별도로 사건 위치 조사와 현장 수색을 유도한다. 이미 기억한 플레이어를 다시 보면 확인 시간을 기다리지 않는다.
 
 ### 플레이어 앉기
 
@@ -111,23 +119,23 @@ BP 기본값과 레벨 인스턴스의 덮어쓰기 값은 다를 수 있다. C+
 
 ### 직접 목격과 엄폐
 
-`CanSeePlayer`는 플레이어가 조종하는 유효한 캐릭터에 대해 다음을 검사한다.
+`CanSeePlayer`는 공통 SPStealthObserverComponent에 위임한다. 플레이어가 조종하는 유효한 캐릭터에 대해 다음을 검사한다.
 
-1. 경비 눈 위치는 액터 위치의 Z + 64cm이다.
+1. 눈은 Observer 컴포넌트의 월드 위치/회전이다. 경비 기본 상대 위치는 Z +64cm이며 편집 가능하다.
 2. 대상 샘플은 캡슐 중심과 `중심 Z + 캡슐 반높이 × 0.65`의 두 점이다. 앉으면 실제 캡슐 높이가 반영된다.
-3. 각 샘플이 거리, 전체 수평 시야각의 절반, 전체 수직 시야각의 절반 안에 있어야 한다.
+3. 각 샘플이 거리, 눈 로컬 수평각/수직각의 각 반각 안에 있어야 한다. 아래로 향한 CCTV도 같은 코드를 재사용한다.
 4. 눈에서 샘플까지 `ECC_Visibility` Line Trace가 막히지 않아야 한다. 자신과 해당 대상은 트레이스에서 제외한다.
 5. 두 샘플 중 하나라도 통과하면 보이는 것으로 판단한다.
 
-`UpdateSight`는 여기에 신원·구역 조건을 추가한다. **미발각 플레이어는 경로의 RestrictedArea 안에 있을 때만** 확인 대상이고, 이미 같은 Alert Group에 신원이 기억된 플레이어는 구역 밖에서도 대상이다. `ContainsLocation`은 플레이어 액터 중심의 박스 내부 여부를 검사하며, Overlap 이벤트나 캡슐 전체 포함 검사가 아니다.
+공통 Observer는 독립 SPRestrictedArea의 플레이어 중심 포함 여부 또는 Activity의 지속 범죄를 확인한다. 일반 구역의 실제 포장도 확인 대상이다. 정상 이동·가방 운반·바닥 가방 줍기는 등록이 없다. 경비 정책은 이미 같은 IdentityScope에 알려진 플레이어를 구역 밖에서도 즉시 재발견한다. 제한 구역은 Overlap 이벤트나 캡슐 전체 포함 검사가 아니다.
 
-`ConfirmationTimes`는 플레이어 Pawn별로 시간을 따로 저장한다. 보이는 상태가 기본 1초 지속되면 발각되고, 도중에 가려지거나 시야·구역 조건을 벗어나면 그 플레이어의 시간이 제거된다. `SuspicionProgress`는 미확정 후보 중 가장 높은 진행률이며 특정 플레이어의 UI 정보로 사용하기에는 추가 구분이 필요하다.
+각 Observer의 `Confirmations`는 플레이어 Pawn별로 시간을 따로 저장한다. 보이는 상태가 기본 1초 지속되면 발각되고, 도중에 가려지거나 시야·구역 조건을 벗어나면 그 플레이어의 시간이 제거된다. `SuspicionProgress`는 미확정 후보 중 가장 높은 진행률이며 특정 플레이어의 UI 정보로 사용하기에는 추가 구분이 필요하다.
 
 엄폐물은 반드시 Visibility를 Block해야 한다. 메시가 눈에 보이더라도 해당 채널 충돌이 없으면 시야를 차단하지 않는다. 반대로 다른 액터가 이 채널을 막으면 그것도 가림에 영향을 줄 수 있다.
 
 ### 발소리에 뒤돌아보기
 
-현재 발소리는 **서버에서 이동 상태로 판단하는 청각 모사**다. 사운드 파일·AnimNotify·바닥 재질별 소리나 AI Hearing 이벤트는 사용하지 않는다.
+아래는 **명시적으로 HearFootsteps를 켰을 때만** 동작하는 기존 청각 모사다. MVP 기본과 저장된 두 맵에서는 꺼져 있다. 금고/드릴 소리는 별도 ReportWorkNoise(Context) 익명 API를 호출한다. 사운드 파일·AnimNotify·바닥 재질별 소리나 AI Hearing 이벤트는 사용하지 않는다.
 
 `CanHearPlayer`는 청각 활성화, 플레이어 조종, 서 있는 상태, 지상 이동, 수평속도 80cm/s 이상, 3차원 거리 650cm 이내를 모두 요구한다. 미발각 플레이어는 해당 침입 구역 안이어야 하며, 이미 신원이 기억된 플레이어는 구역 밖에서도 조건을 만족할 수 있다. 앉은 이동·정지·공중 이동은 이 판정에서 제외된다.
 
@@ -137,23 +145,25 @@ BP 기본값과 레벨 인스턴스의 덮어쓰기 값은 다를 수 있다. C+
 
 ### 플레이어별 신원과 동료 호출
 
-`USPGuardAlertSubsystem`은 월드 단위로 `AlertGroup → PlayerState 약한 참조 집합`을 관리한다. `ReportSighting`는 서버 목격자, 유효한 플레이어·PlayerState, 같은 월드를 확인한 다음 해당 신원을 등록하고, 같은 그룹의 모든 경비에게 `ReceiveSighting(플레이어, 목격 위치)`를 호출한다.
+`USPGuardAlertSubsystem`은 서버 사건 처리/대응 지시를 담당한다. 신원의 원본은 PlayerState의 복제 `SPStealthPlayerStateComponent`이며 전체 경보는 기존 GameState의 복제 `SPStealthGameStateComponent`다. `ReportSighting`은 기존 호출부의 호환 진입점으로 지속 범죄 확인 또는 알려진 플레이어 재발견 사건을 제출한다. 직접 확인은 해당 플레이어의 IdentityScope 발각과 전체 경보를 발생시키고, 지정 AlertGroup에만 출동을 지시한다. 두 범위는 독립이다.
 
 예를 들어 A만 발각되면 경비 1과 2의 목표는 A가 된다. 미발각 B의 확인 시간이 채워지거나 B의 신원이 자동 등록되지는 않는다. 다만 B도 별도로 침입 구역에서 연속 목격되면 B가 새로 발각되는 것은 정상이다. “A가 발각되면 모든 플레이어가 적”인 전역 Boolean은 사용하지 않는다.
 
 동료는 직접 A를 보지 못해도 받은 위치로 출동한다. 다른 확정 대상을 눈앞에서 추격 중이면 무선 보고만으로 목표를 바꾸지 않지만, 기존 대상이 안 보이는 상황에서는 다른 확정 대상의 보고로 바뀔 수 있다. 다중 대상의 상세 위협도 정책은 구현하지 않았다.
 
-보고 범위는 **거리 제한 없이 같은 월드의 동일 Alert Group**이다. 다른 차량을 독립 경계 구역으로 만들려면 그룹명을 구분한다. 이미 알려진 대상의 반복 보고는 경비별 약 0.4초 간격으로 제한한다.
+출동은 같은 월드의 동일 AlertGroup 중 사건 위치에서 ResponseRadius(기본 5000cm) 안의 경비를 가까운 순으로 MaxResponders(기본 4명)까지 선택한다. 목격 경비의 직접 시야 반응은 무선 출동 인원과 별개다. 신원을 공유하지 않는 보안망은 IdentityScope도 구분한다. 같은 공유 범위의 다른 출동 그룹은 신원은 알아도 즉시 출동하지 않는다. 이미 알려진 대상의 반복 보고는 경비별 약 0.4초 간격으로 제한하며 최초 효과를 반복하지 않는다.
 
-순찰로 돌아와도 신원 기억은 지워지지 않는다. 기억은 현재 월드와 PlayerState 기준이며 세이브·접속 재개·맵 이동을 위한 영구 기록이 아니다. 같은 PlayerState를 유지하는 리스폰은 기억을 이어받을 수 있다. 현재 명시적인 신원 초기화 API는 없으며, 리스폰·재접속 정책을 추가할 때 함께 설계해야 한다.
+순찰로 돌아와도 신원은 지워지지 않는다. `StartStage/EndStage/RestartStage`가 신원·전체 경보·경비 대응을 명시적으로 초기화하고 새 StageId로 늦은 사건을 차단한다. 같은 PlayerState의 리스폰은 발각을 유지한다. 세이브·새 PlayerState 재접속·맵 이동을 넘는 계정별 신원 복원은 미구현이다.
 
 ### 순찰과 추격 및 수색
 
-순찰은 현재 지점에서 수평거리 65cm 이내에 도착하면 1.2초 대기하고 다음 지점으로 이동한다. 경로가 없거나 지점 배열이 비어 있으면 정지한다. 복귀 시에는 기존 순찰 인덱스를 유지하며 가장 가까운 지점을 새로 찾지는 않는다.
+순찰은 현재 지점의 수평거리 60cm 및 높이 범위에 도착하면 1.2초 대기하고 다음 지점으로 이동한다. 경로가 비면 정지한다. 복귀 시 기존 순찰 인덱스를 유지한다.
 
-추격은 `TargetPlayer`의 실시간 위치를 목적지로 고정하는 `MoveToActor` 대신, 직접 목격하거나 보고받은 `LastSeenLocation`을 `AAIController::MoveToLocation`에 전달한다. 길찾기와 목적지 내비게이션 투영, 부분 경로를 허용한다. 이동 요청 간격은 최소 0.35초이며, 이미 이동 중이고 목적지가 거의 같으면 재요청을 생략한다.
+추격은 직접 목격/보고한 LastSeenLocation, 익명 조사는 사건 당시 InvestigationLocation 스냅샷을 사용한다. 숨은 Pawn에 MoveToActor를 사용하지 않는다. 완전한 경로와 제한된 NavMesh 투영만 허용하며 동일 목적지 요청을 매 Tick 반복하지 않는다. 이동 요청 실패·NavMesh 누락·도달 불가·정체를 감지하고 기본 2회 재시도 후 복귀/실패를 기록한다. 막힌 순찰 지점은 유예 후 건너뛴다.
 
-대상이 보이면 위치를 갱신하며 추격하고, 115cm 이내에서는 멈추어 바라본다. 시야를 잃으면 마지막 목격 위치로 이동한다. 그 위치의 100cm 이내에 도착하면 초당 50°로 회전하며 5초 수색한 뒤 순찰로 돌아간다. 시야를 잃은 상태에서 새 목격·보고 없이 12초가 지나면, 그 위치에 도달하지 못했어도 복귀한다. **계속 보이거나 새 보고가 들어오는 대상에는 이 종료 조건이 적용되지 않으며, 도달할 수 없는 위치에서도 반드시 5초 현장 수색을 하는 것은 아니다.** 새 목격·보고는 위치와 마지막 목격 시각을 갱신한다.
+보이는 대상은 115cm 이내에서 멈춘다. 시야를 잃으면 MovingToLastSeen, 도착하면 Searching으로 전환한다. 익명 사건은 Investigating → SceneSearching이다. 각 수색은 도착 후 기본 5초이며 이동 예산(기본 30초)과 별개다. 마지막 목격 이동은 새 보고 없이 12초를 넘겨도 종료한다. 도달 불가 지점에서 현장 도착을 꾸며내거나 부분 경로 끝에서 수색하지 않는다. 실패 이후 대응 유예는 기본 5초다.
+
+일반 구역의 정상 미발각 플레이어는 조사 옆에서 보여도 추격하지 않는다. 범죄 목격/발각자 재발견은 기존 정책대로 우선하며, 확정 TargetPlayer는 익명 호출로 바뀌지 않는다. 같은 사건 ID는 병합하고 새 익명 사건은 이전 익명 조사만 교체한다. [조사 API·설정·실패 계약](../Stealth/GuardInvestigation.md)에 상세 내용을 기록했다.
 
 접근해도 공격하거나 피해를 주지 않는다. 현재 추격속도 340cm/s는 플레이어 기본 걷기 400cm/s보다 느리므로 쉽게 따돌릴 수 있다. 난이도를 바꿀 때는 거리·확인 시간뿐 아니라 이동속도도 함께 검토한다.
 
@@ -180,29 +190,29 @@ BP 기본값과 레벨 인스턴스의 덮어쓰기 값은 다를 수 있다. C+
 | 처리 | 실행 위치와 데이터 |
 |---|---|
 | 시야·청각·확인 타이머·목표 선정·길찾기 | 서버의 `HasAuthority()` 분기 |
-| 신원 집합과 경보 전달 | 서버 Subsystem. `ReceiveSighting`는 RPC가 아니며 클라이언트 호출은 무시 |
-| 상태 복제 | `GuardState`, `TargetPlayer`, `LastSeenLocation`, `SuspicionProgress`, `HeardLocation` |
+| 신원/경보 변경과 전달 | 서버 Subsystem이 기존 PS/GS의 복제 컴포넌트를 갱신. `ReceiveSighting`는 RPC가 아니며 클라이언트 호출은 무시 |
+| 상태 복제 | 기존 경비 상태 + `bInvestigatingAnonymousIncident`, `InvestigationLocation`, `InvestigationIncidentId`, `LastInvestigation`; PS의 개별 신원, GS의 스테이지/전체 경보 |
 | 경비 이동과 앉기 | 기존 Character/CharacterMovement 복제 경로 사용 |
 | 머리 위 문자·시야·자세 재생 | 각 화면에서 복제된 상태와 이동을 사용. 전용 서버는 표시 생략 |
 
-서버 내부의 플레이어별 확인 타이머, 청각 후보 참조, 신원 집합은 클라이언트로 복제하지 않는다. **시야·청각·속도 설정과 경로 Points도 Replicated 속성이 아니다.** 런타임에 서버에서만 설정을 바꾸면 클라이언트의 시야 그림이나 애니메이션 속도 대응이 달라질 수 있다. 플레이 전 맵/BP 설정을 공유하고, 실행 중 난이도 변경 기능을 추가한다면 필요한 설정의 복제를 별도로 구현한다.
+서버 내부의 확인 타이머, 청각 후보 참조, 사건 ID 집합은 복제하지 않는다. 확정된 개별 신원과 전체 경보는 복제한다. **시야·청각·속도·IdentityScope/AlertGroup 설정과 경로 Points는 Replicated 속성이 아니다.** 런타임에 서버에서만 설정을 바꾸면 클라이언트의 시야 그림이나 애니메이션 대응이 달라질 수 있다. 플레이 전 맵/BP 설정을 공유하고, 실행 중 난이도 변경 시 필요한 설정의 복제를 별도로 구현한다.
 
-머리 위 문자는 `UTextRenderComponent`이며 각 월드의 첫 로컬 플레이어 카메라를 향한다. `!`는 추격, `?`는 소리 확인·시야 확인·수색에 공통 사용한다. 분할 화면의 여러 로컬 카메라를 각각 향하는 구현은 아니다.
+머리 위 문자는 `UTextRenderComponent`이며 각 월드의 첫 로컬 플레이어 카메라를 향한다. CHASE / CHECK SIGHT / INVESTIGATE / SEARCH SCENE / LAST SEEN / SEARCH LAST SEEN 등 상태별 문자를 표시한다. 분할 화면의 여러 로컬 카메라를 각각 향하는 구현은 아니다.
 
-시야 그림은 눈높이에서 32개 구간으로 수평 트레이스한 뒤 바닥 높이에 투영한다. 실제 판정의 수직 범위와 두 신체 샘플을 모두 표현하는 정확한 감지 볼륨은 아니다. 낮은 엄폐물에서는 그림만으로 안전 여부를 단정하지 않는다. `Show Vision`을 끄거나 Shipping/Test로 빌드하면 시야 그림은 표시하지 않지만, `!/?` 표시는 별도의 빌드 제외 조건이 없다.
+시야 그림은 눈높이에서 32개 구간으로 수평 트레이스한 뒤 바닥 높이에 투영한다. 실제 판정의 수직 범위와 두 신체 샘플을 모두 표현하는 정확한 감지 볼륨은 아니다. 낮은 엄폐물에서는 그림만으로 안전 여부를 단정하지 않는다. `Show Vision`을 끄거나 Shipping/Test로 빌드하면 시야 그림은 표시하지 않지만, 머리 위 표시는 ShowStateIndicator로 별도 제어한다. 시험 debug_test_map.py는 실제 독립 구역 박스, 눈 로컬 수평/수직/거리 경계와 판정 샘플을 추가로 그린다.
 
 ## 수정할 때 참고할 사항
 
 | 수정 목적 | 작업 위치와 확인 사항 |
 |---|---|
 | 순찰 경로 변경 | 경로 Points를 수정하고 NavMesh 안에 지점을 둔다. 시작 인덱스와 벽 양쪽 경로 연결 확인 |
-| 경비 추가 | `BP_SPGuardCharacter` 배치 후 PatrolRoute, StartPointIndex, AlertGroup 설정. 같은 그룹이면 먼 경비도 보고를 받음 |
-| 다른 차량으로 시험 이동 | 경비·경로·벽·숨김 바닥·NavMeshBounds·PlayerStart를 함께 이동. 차량 편성 변경 후도 동일 |
+| 경비 추가 | `BP_SPGuardCharacter` 배치 후 PatrolRoute, StartPointIndex, IdentityScope, AlertGroup 설정. 신원 공유와 출동 편성을 별도 지정 |
+| 다른 차량으로 시험 이동 | 경비·경로·독립 SPRestrictedArea·벽·숨김 바닥·NavMeshBounds·PlayerStart를 함께 이동. 차량 편성 변경 후도 동일 |
 | 발각 난이도 변경 | Sight/Hearing/Movement/Search 디테일 조정. 앉기를 시야 면제로 처리하지 않는 현재 규칙 유지 여부 검토 |
 | 키 변경 | 플레이어 CrouchAction을 지정하고 팀 IMC에 매핑. Triggered와 해제 이벤트가 모두 발생하는지 확인 |
 | 앉기 속도·높이 변경 | Movement 기본값 및 배치/BP override 확인. 카메라, 캡슐 통과 높이, 가방 감속, 자세를 같이 확인 |
 | 경비 외형·동작 변경 | 경비 BP의 Mesh/AnimClass와 `SPGuardAnimInstance`, 해당 블렌드 스페이스 확인 |
-| 경보 해제·라운드 초기화 추가 | AlertSubsystem의 PlayerState 기억 정책부터 확장. TargetPlayer를 비우는 것만으로 신원이 해제되지는 않음 |
+| 스테이지 초기화 연결 | Subsystem의 StartStage/EndStage/RestartStage 호출. TargetPlayer만 비우면 신원은 유지됨. 외부 장치 작업은 소유 시스템에서 취소 |
 
 시험 액터는 생성되는 차량 ChildActor에 붙어 있지 않다. 편성 재생성으로 삭제되는 것을 피하지만 차량을 이동·재정렬해도 자동으로 따라가지 않는다. 현재 구성은 고정된 열차 지형과 움직이는 배경을 전제로 하며, 실제 이동 플랫폼이나 임의 회전된 차량까지 검증한 구성은 아니다.
 
@@ -225,6 +235,8 @@ BP 기본값과 레벨 인스턴스의 덮어쓰기 값은 다를 수 있다. C+
 팀 공유 시 새 C++ 파일, `Content/SpacePirate/Stealth`, 변경 맵, `Tools/Stealth`, 이 문서를 함께 포함한다. 네이티브 클래스 이름을 임의로 바꾸거나 삭제하면 BP 부모 참조가 깨질 수 있다. `Saved`, `Intermediate`, `Binaries`와 개인 검사 로그는 공유 소스에 포함하지 않는다. `Saved/Stealth`의 임시 도구는 게임 실행 의존성이 아니다.
 
 ## 검증 방법과 확인된 범위
+
+이하 옛 열차 감지/발소리 검사는 초기 구현 당시의 이력이다. 현재 단계 4는 전체 자동 33개, 시험 맵 2인 PIE 126개(신규 26 + 기존 100), 열차 호환 PIE 11개를 다시 실행해 통과했다. 발소리 기본은 off이므로 옛 청각 검사기는 opt-in 설정이 필요하다. 독립 구역 이후에는 옛 setup_freight.py만 재실행해 제한 구역을 바꿀 수 없다. 최신 제작/검증 도구와 범위는 ImplementationStatus.md를 사용한다.
 
 ### 자동 검사
 
@@ -292,17 +304,17 @@ py "E:/GitHub/2ND_Run/Tools/Stealth/verify_hearing_pie.py"
 
 | 상태 | 예외 상황 | 현재 실제 동작과 부족한 부분 | 관련 위치 |
 |---|---|---|---|
-| 미처리 | NavMesh 누락, 막힌 순찰 지점, 이동 요청 실패 | `MoveToLocation`의 반환 결과와 이동 완료 실패를 별도로 처리하지 않는다. 요청 간격 제한은 있지만 실패 지점 건너뛰기, 막힘 감지, 별도 복구 경로·오류 로그는 없다. 순찰 지점에 도착하지 못하면 같은 지점으로 계속 이동을 시도할 수 있다. | `SPGuardCharacter.cpp` / `MoveToLocation`, `UpdateBehavior` |
-| 미처리 | 보이지만 도달할 수 없는 대상 | 직접 보이는 대상은 매번 목격 시간이 갱신되고 시야 상실 타임아웃 분기에도 들어가지 않는다. 길이 막혀 있어도 자동으로 추격을 포기하는 처리는 없다. | `SPGuardCharacter.cpp` / `UpdateSight`, `UpdateBehavior` |
-| 부분 처리 | AI Controller 없음 | 이동·행동 함수는 null을 확인하고 반환한다. Controller 자동 복구·재소유, 오류 안내는 없다. 시야 처리와 상태 변경은 계속될 수 있어 표시 상태와 이동이 어긋날 수 있다. | `SPGuardCharacter.cpp` / `MoveToLocation`, `UpdateBehavior` |
+| 처리 | NavMesh 누락, 막힌 순찰 지점, 이동 요청 실패 | 사전 완전 경로 검사·이동 상태·정체 감지. 제한된 재시도 후 실패 로그/복제 영수증, 순찰 지점 건너뛰기·유예. 자동 NavMesh 생성은 없음. | `SPGuardCharacter.cpp` / `MoveToLocation`, `UpdateBehavior` |
+| 처리 | 보이지만 도달할 수 없는 대상 | 이동 실패 예산과 전체 이동 제한으로 포기 후 유예한다. 목격 위치 갱신이 이동 예산을 초기화하지 않는다. 신원은 유지한다. | `SPGuardCharacter.cpp` / `UpdateSight`, `UpdateBehavior` |
+| 부분 처리 | AI Controller 없음 | NoController로 제한 재시도·실패 결과를 기록한다. Controller 자동 복구·재소유는 없다. | `SPGuardCharacter.cpp` / `MoveToLocation`, `UpdateBehavior` |
 | 부분 처리 | AlertSubsystem 없음 | 시야 갱신을 건너뛰지만, 반환 전에 기존 시야·의심 상태를 초기화하지 않는다. 이전 상태 정리나 Subsystem 복구는 없다. 정상 Game/PIE 월드에서는 Subsystem 생성을 전제로 한다. | `SPGuardCharacter.cpp` / `UpdateSight` |
-| 부분 처리 | 플레이어의 PlayerState가 없음 | Subsystem은 신원 등록·전파를 거부한다. 그러나 시야 확정 후 목표가 없는 경비는 별도 `ReceiveSighting` 경로로 그 Pawn을 로컬 목표로 삼을 수 있다. 신원·전파와 개별 목표의 일관성을 보장하는 처리는 없다. | `SPGuardAlertSubsystem.cpp` / `ReportSighting`; `SPGuardCharacter.cpp` / `UpdateSight` |
+| 처리 | 플레이어의 PlayerState가 없음 | 사건을 거부하며 경비의 로컬 추격 우회 경로도 확정된 신원이 있을 때만 실행한다. | `SPGuardAlertSubsystem.cpp` / `ReportSighting`; `SPGuardCharacter.cpp` / `UpdateSight` |
 | 부분 처리 | 앉기 AnimBP가 비어 있거나 로드 실패 | 메시·클래스 지정·로드 성공을 확인해 후처리 연결을 건너뛴다. 앉기 이동·캡슐 처리는 남을 수 있으나 대체 자세, 재시도, 이 기능 전용 실패 로그는 없다. | `SPPlayerCharacter.cpp` / `BeginPlay` |
 | 미처리 | 경비 AnimBP 오류, 다른 스켈레톤·본, 후처리 충돌 | 제작 시 일부 컴파일 검사는 있지만 런타임 호환성 검사나 대체 AnimBP 연결은 없다. 기존 Post Process override와 자동 합성하는 처리도 없다. | 경비 BP, 두 AnimBP, `SPPlayerCharacter.cpp` / `BeginPlay` |
 | 부분 처리 | LocalPlayer 또는 Enhanced Input Subsystem 없음 | 존재 여부를 확인하고 임시 매핑 추가를 건너뛴다. 앉기 매핑 전용 재시도·오류 안내는 없다. 직접 지정한 CrouchAction의 키 매핑도 검증하지 않는다. | `SPPlayerCharacter.cpp` / `SetupPlayerInputComponent` |
 | 부분 처리 | 런타임에 음수·비정상 수치가 설정됨 | 디테일의 `ClampMin/ClampMax`와 일부 계산 방어만 있다. 모든 값의 런타임 범위·NaN·무한대 검증, PatrolSpeed/ChaseSpeed 관계 보정은 없다. 애니메이션 계산의 보정이 실제 이동 설정까지 고치지는 않는다. | `SPGuardCharacter.h`, `SPGuardCharacter.cpp`, `SPGuardAnimInstance.cpp` |
 | 미처리 | 사망했지만 여전히 조종 중인 플레이어 | 감지 함수에 체력·사망·관전자 상태의 별도 필터가 없다. 해당 상태를 도입할 때 대상 제외 정책을 추가해야 한다. | `SPGuardCharacter.cpp` / `CanSeePlayer`, `CanHearPlayer` |
-| 미처리 | 재접속·리스폰·라운드 초기화 시 신원 정리 | 신원은 PlayerState 약한 참조로 저장하지만 명시적 초기화·영구 저장·재접속 매핑이나 만료 항목 정리 정책은 없다. 약한 참조가 객체 생존을 강제로 연장하지 않는 것과 게임 규칙에 맞게 기억을 정리하는 것은 다르다. | `SPGuardAlertSubsystem.h/.cpp` |
+| 부분 처리 | 재접속·리스폰·스테이지 초기화 | PS 복제 컴포넌트가 원본. 명시적 단계 초기화와 동일 PS 리스폰 유지 구현. 새 PS로 재접속/맵 이동 시 계정별 복원은 미구현. | `SPGuardAlertSubsystem.h/.cpp`, `SPStealthPlayerStateComponent.*` |
 | 미처리 | 런타임 경로 액터 파괴·기본 컴포넌트 제거 | 경로 사용 시 주로 null 검사만 하며 모든 호출에 `IsValid` 검사가 있는 것은 아니다. Capsule·Movement·Mesh·RestrictedArea 같은 기본 컴포넌트가 존재한다고 가정한다. 동적 제거에 대한 일관된 방어·대체 구성은 없다. | `SPGuardCharacter.cpp`, `SPGuardPatrolRoute.cpp`, `SPPlayerCharacter.cpp` |
 | 미처리 | 서버에서만 시야·청각·속도·경로 설정 변경 | 설정값 자동 복제가 없어 클라이언트의 그림·애니메이션 계산과 달라질 수 있다. 설정 불일치 감지·재동기화 처리는 없다. | `SPGuardCharacter.h`, `SPGuardPatrolRoute.h` |
 
@@ -327,5 +339,5 @@ py "E:/GitHub/2ND_Run/Tools/Stealth/verify_hearing_pie.py"
 | 벽 뒤에서 발각됨 | Visibility 충돌과 실제 상체 노출 확인. 벽 뒤에서 `?`만 뜨는 것은 청각 반응일 수 있음 |
 | 서서 걸어도 안 돌아봄 | 구역·650cm 거리·80cm/s 하한·지상 이동 확인. 기존 목표나 시야 확인 후보가 있으면 청각은 후순위 |
 | 두 경비가 함께 출동하지 않음 | AlertGroup 일치, 1초 시야 확정, PlayerState 유효성, 다른 확정 대상을 눈앞에서 추격 중인지 확인 |
-| 순찰 복귀 후 바로 재발각됨 | 같은 PlayerState의 신원을 기억하는 의도된 동작. 초기 상태 검사는 새 PIE 월드에서 수행 |
+| 순찰 복귀 후 바로 재발각됨 | 같은 PlayerState의 신원을 기억하는 의도된 동작. 초기 상태는 스테이지 초기화 API 또는 새 PIE로 검사 |
 | 시야 그림과 발각이 다름 | 그림은 수평 투영 참고용. 수직각·두 신체 샘플·서버 설정을 확인 |

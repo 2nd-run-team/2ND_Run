@@ -5,13 +5,15 @@
 Checks damage, down/revive input, replication, cancellation, and each owner's HUD.
 
 Launch the normal UnrealEditor.exe (not a commandlet), opening Lvl_SPTestMap:
-  -ExecutePythonScript="D:/SecondRun/2ND_Run/Tools/PlayerStatus/run_pie_verification.py"
+  -ExecutePythonScript="<project>/Tools/PlayerStatus/run_pie_verification.py"
   -unattended -nosplash -nosound -NoLiveCoding
 
 Only PIE actors are moved. No asset is saved. Play settings are restored directly
 after the engine copies them for PIE. The editor exits after the JSON report is
 written to Saved/PlayerStatus/pie-verification.json. The script must not be run
-inside an existing PIE session. Uses Enhanced Input on both local owning players.
+inside an existing PIE session by default. For an existing two-player session use
+runpy.run_path(..., init_globals={'SP_STATUS_USE_EXISTING_PIE': True}); that mode
+leaves PIE/editor running for the caller to stop. Uses Enhanced Input on both owners.
 Set Editor Play Net Mode to Listen Server before launching this script.
 """
 import json
@@ -21,6 +23,7 @@ from pathlib import Path
 
 import unreal as u
 
+USE_EXISTING_PIE = bool(globals().get("SP_STATUS_USE_EXISTING_PIE", False))
 OUTPUT = Path(u.Paths.project_saved_dir()) / "PlayerStatus"
 OUTPUT.mkdir(parents=True, exist_ok=True)
 REPORT_PATH = OUTPUT / "pie-verification.json"
@@ -237,10 +240,12 @@ def finish(error=None):
     try:
         if performance_settings is not None and previous_throttle is not None:
             performance_settings.set_editor_property("bThrottleCPUWhenNotForeground", previous_throttle)
-        level.editor_request_end_play()
+        if not USE_EXISTING_PIE:
+            level.editor_request_end_play()
     finally:
         u.log("PLAYER_STATUS_PIE_VERIFICATION_COMPLETE: " + str(report["passed"]))
-        u.EditorPythonScripting.set_keep_python_script_alive(False)
+        if not USE_EXISTING_PIE:
+            u.EditorPythonScripting.set_keep_python_script_alive(False)
 
 
 def tick(_delta):
@@ -261,7 +266,7 @@ def tick(_delta):
         now = u.GameplayStatics.get_time_seconds(server)
         elapsed += max(0, now - last_time)
         last_time = now
-        delays = [1.0, .7, .6, .7, .7, 1.2, .6, 1.0, .4, .7, .6, 4.6, .6, .7, 1.3, 3.3, .7, .7]
+        delays = [1.0, .7, .6, .7, .7, 1.2, .6, 1.0, 1.5, .7, .6, 4.6, .6, .7, 1.3, 3.3, .7, .7]
         if elapsed < delays[stage]:
             return
         elapsed = 0.0
@@ -277,7 +282,7 @@ def tick(_delta):
             status(a).apply_damage(25)
         elif stage == 1:
             check("Server damage replicates remote owner HP 75", health_is(a, 75))
-            check("Owner HUD shows numeric 75 HP", hud_text(local_a, "health_text") == "HP 75 / 100")
+            check("Owner HUD shows numeric 75 HP", hud_text(local_a, "health_text") == "체력 75 / 100")
             status(local_a).apply_damage(25)
         elif stage == 2:
             check("Client cannot modify authority HP directly", health_is(a, 75))
@@ -286,8 +291,8 @@ def tick(_delta):
             check("Empty-hand downed capsule is horizontal on server and client", all(abs(p.get_actor_up_vector().z) < .01 for p in copies(b)))
             check("Empty-hand mesh follows the downed capsule everywhere", body_is_horizontal(b))
             check("Engine ApplyDamage downs host on both worlds", down_is(b, True) and health_is(b, 0))
-            check("Downed owner HUD shows zero and DOWNED", hud_text(local_b, "health_text") == "HP 0 / 100"
-                  and hud_text(local_b, "state_text") == "DOWNED")
+            check("Downed owner HUD shows zero and down state", hud_text(local_b, "health_text") == "체력 0 / 100"
+                  and hud_text(local_b, "state_text") == "다운 · 구조 대기")
             check("Active crew count replicates", all(u.GameplayStatics.get_game_state(w).get_active_player_count() == 1 for w in worlds))
             screenshot("hud-downed")
             down_start = b.get_actor_location()
@@ -323,7 +328,7 @@ def tick(_delta):
         elif stage == 11:
             held.clear()
             check("Remote four-second rescue restores host HP30 everywhere", health_is(b, 30) and down_is(b, False))
-            check("Host HUD reflects restored HP30", hud_text(local_b, "health_text") == "HP 30 / 100")
+            check("Host HUD reflects restored HP30", hud_text(local_b, "health_text") == "체력 30 / 100")
             snapshot("host_revived")
             check("Revived host capsule is upright everywhere", all(p.get_actor_up_vector().z > .99 for p in copies(b)))
             give_test_cargo(a)
@@ -333,7 +338,7 @@ def tick(_delta):
             check("Cargo-carrying downed capsule is horizontal everywhere", all(abs(p.get_actor_up_vector().z) < .01 for p in copies(a)))
             check("Cargo-carrying mesh follows the downed capsule everywhere", body_is_horizontal(a))
             check("Remote player down state replicates", down_is(a, True) and health_is(a, 0))
-            check("Remote HUD reflects its own down state", hud_text(local_a, "state_text") == "DOWNED")
+            check("Remote HUD reflects its own down state", hud_text(local_a, "state_text") == "다운 · 구조 대기")
             place(b, position_b)
             aim(local_b, a, "head")
         elif stage == 13:
@@ -346,7 +351,7 @@ def tick(_delta):
         elif stage == 15:
             held.clear()
             check("Host rescue restores remote HP30 everywhere", health_is(a, 30) and down_is(a, False))
-            check("Remote owner HUD reflects restored HP30", hud_text(local_a, "health_text") == "HP 30 / 100")
+            check("Remote owner HUD reflects restored HP30", hud_text(local_a, "health_text") == "체력 30 / 100")
             check("Revived cargo carrier capsule is upright everywhere", all(p.get_actor_up_vector().z > .99 for p in copies(a)))
             check("Rescue keeps the held cargo", all(p.is_carrying_cargo() for p in copies(a)))
             status(a).apply_damage(1000)
@@ -371,8 +376,10 @@ def tick(_delta):
 
 
 try:
-    assert not u.EditorLevelLibrary.get_pie_worlds(False), "Run with no existing PIE session."
-    u.EditorPythonScripting.set_keep_python_script_alive(True)
+    assert (len(u.EditorLevelLibrary.get_pie_worlds(False)) == 2 if USE_EXISTING_PIE
+            else not u.EditorLevelLibrary.get_pie_worlds(False)), "Expected two-player PIE or an idle editor."
+    if not USE_EXISTING_PIE:
+        u.EditorPythonScripting.set_keep_python_script_alive(True)
     performance_settings = u.get_default_object(u.load_class(None, "/Script/UnrealEd.EditorPerformanceSettings"))
     previous_throttle = performance_settings.get_editor_property("bThrottleCPUWhenNotForeground")
     performance_settings.set_editor_property("bThrottleCPUWhenNotForeground", False)
@@ -385,7 +392,8 @@ try:
     try:
         for key, value in overrides.items():
             settings.set_editor_property(key, value)
-        level.editor_request_begin_play()
+        if not USE_EXISTING_PIE:
+            level.editor_request_begin_play()
     finally:
         # RequestPlaySession synchronously duplicates these settings in UE5.8.
         for key, value in previous.items():

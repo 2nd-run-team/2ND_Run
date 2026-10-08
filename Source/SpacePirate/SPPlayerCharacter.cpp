@@ -23,6 +23,7 @@
 #include "SpacePirateGameMode.h"
 #include "SPInventoryComponent.h"
 #include "SPCargo.h"
+#include "SPStealthActivityComponent.h"
 
 #include "Engine/World.h"
 
@@ -113,6 +114,7 @@ ASPPlayerCharacter::ASPPlayerCharacter(
     DebugHelpWidgetClass = USPDebugHelpWidget::StaticClass();
 
     JumpMaxCount = 1;
+    StealthActivity = CreateDefaultSubobject<USPStealthActivityComponent>(TEXT("StealthActivity"));
     JumpMaxHoldTime = 0.0f;
 }
 
@@ -138,6 +140,7 @@ void ASPPlayerCharacter::BeginPlay()
 
 void ASPPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    if (HasAuthority()) { StealthActivity->CancelAllActivity(); }
     RemoveStatusHUD();
     RemoveDebugHelp();
     if (CrouchLocalPlayer.IsValid() && CrouchMappingContext)
@@ -836,6 +839,8 @@ void ASPPlayerCharacter::HandleLifeStateChanged(ESPPlayerLifeState NewState)
     Interactor->StopInteract();
     bDropHeld = false;
     const bool bDowned = NewState == ESPPlayerLifeState::Downed;
+    // 다운 여부의 원본은 Status다. 잠입 기능은 이 결과를 받아 작업을 취소하며, 소생해도 신원 발각 기록은 유지한다.
+    if (HasAuthority()) { StealthActivity->SetIncapacitated(bDowned); }
     USPCharacterMovementComponent* Movement = Cast<USPCharacterMovementComponent>(GetCharacterMovement());
     if (bDowned && !bAppliedDownState)
     {
@@ -912,6 +917,7 @@ void ASPPlayerCharacter::PossessedBy(AController* NewController)
 
 void ASPPlayerCharacter::UnPossessed()
 {
+    if (HasAuthority()) { StealthActivity->CancelAllActivity(); }
     Interactor->StopInteract();
     RemoveStatusHUD();
     RemoveDebugHelp();

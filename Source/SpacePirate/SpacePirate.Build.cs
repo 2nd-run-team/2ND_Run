@@ -25,7 +25,7 @@ public class SpacePirate : ModuleRules
 		});
 
 		// 무중력 이동 패킷의 FVector_NetQuantize10 직렬화 구현에 필요하다.
-		PrivateDependencyModuleNames.AddRange(new string[] { "NetCore", "SlateCore" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "NetCore", "SlateCore", "NavigationSystem" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"SpacePirate",

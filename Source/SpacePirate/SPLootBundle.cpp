@@ -17,6 +17,8 @@ ASPLootBundle::ASPLootBundle()
 
     Interactable = CreateDefaultSubobject<USPInteractableComponent>(TEXT("Interactable"));
     Interactable->HoldDuration = 2.0f;
+    // 포장하는 동안만 범죄로 등록한다. 완성된 가방의 줍기·운반은 이 등록을 이어받지 않는다.
+    Interactable->CrimeKind = ESPCrimeKind::LootPacking;
     Interactable->Prompt = NSLOCTEXT("SpacePirate", "PackPrompt", "포장");
 }
 

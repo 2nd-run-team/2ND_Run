@@ -1,5 +1,8 @@
 #pragma once
 
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 구조용 이동 취소·시야 검사 옵션과 서버의 조작자 검증·시작 위치 저장 항목을 추가한다.
+
 // 역할: E로 조작하는 대상(포장할 금고 묶음, 쓰러진 동료, 단말, 금고 등)에 붙인다. 기획: Docs/E_길게누르기_기획안_2026-10-05.md
 // HoldDuration이 0이면 누르는 즉시 완료하고, 0보다 크면 그 시간 동안 누르고 있어야 완료한다.
 // 시작·취소·완료는 서버에서만 판정하고, 조작자와 시작 시각을 복제해 모든 화면이 같은 진행률을 계산한다.
@@ -43,6 +46,17 @@ public:
     /** 누르는 동안 조작자의 이동과 시점 회전을 막는다. 금고 직접 해제에만 켠다. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
     bool bLockControls = false;
+
+    /** 구조처럼 제자리에서 해야 하는 작업. 시작 위치에서 움직이면 진행을 취소한다. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+    bool bCancelOnMovement = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact", meta = (ClampMin = "0.0", Units = "cm", EditCondition = "bCancelOnMovement"))
+    float MovementCancelTolerance = 5.0f;
+
+    /** 켠 대상만 시작할 때와 누르는 동안 벽에 가려졌는지 서버에서 확인한다. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+    bool bRequireLineOfSight = false;
 
     /** 화면 안내에 쓸 행동 이름(예: 포장, 구조). */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
@@ -89,6 +103,8 @@ protected:
 private:
     void Finish(bool bCompleted);
     double GetSyncedTime() const;
+    bool IsUserAvailable(const APawn* User) const;
+    bool HasLineOfSight(const APawn* User) const;
 
     UPROPERTY(Replicated)
     TObjectPtr<APawn> CurrentUser;
@@ -106,4 +122,7 @@ private:
 
     /** 서버 전용. 시작할 때 받은 상호작용 거리. */
     float AllowedDistance = 0.0f;
+
+    /** 서버 전용. 구조자가 시작한 위치. */
+    FVector UserStartLocation = FVector::ZeroVector;
 };

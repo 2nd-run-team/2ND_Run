@@ -1,9 +1,19 @@
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 상태·구조 컴포넌트를 연결하고 다운 시 입력·이동 제한, 가방 낙하, 임시 자세·카메라 복구를 추가한다.
+// 변경 내용: 소유자 HUD·테스트 키와 생존 인원 집계 알림을 연결한다.
+// 작업자: 김세훈 | 2026-10-08 | 다운 캡슐 정렬 수정
+// 변경 내용: 메시 단독 회전을 제거하고 서버의 캡슐 회전에 자세를 맞춘다. 다운 카메라는 캡슐 중심에 둔다.
+
 #include "SPPlayerCharacter.h"
 
 #include "SPGravitySwitch.h"
 #include "SPCharacterMovementComponent.h"
 #include "SPDebug.h"
 #include "SPInteractorComponent.h"
+#include "SPInteractableComponent.h"
+#include "SPPlayerStatusHUDWidget.h"
+#include "SPGravityWorldSubsystem.h"
+#include "SpacePirateGameMode.h"
 #include "SPInventoryComponent.h"
 #include "SPCargo.h"
 
@@ -22,6 +32,11 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "Animation/AnimInstance.h"
+#include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/DamageType.h"
+#include "Framework/Commands/InputChord.h"
+#include "TimerManager.h"
 
 // NOTICE [TEMP-GRAVITY-SWITCH]: 정식 장치 도입 후 Interact의 버튼 분기와 버튼 검색/RPC를 교체한다.
 // 작업자: 김세훈 (중력 영역/버튼 연동). Shipping/Test에서는 임시 버튼 사용을 제외한다.
@@ -85,8 +100,18 @@ ASPPlayerCharacter::ASPPlayerCharacter(
         CreateDefaultSubobject<USPInteractorComponent>(
             TEXT("Interactor"));
 
+    Status = CreateDefaultSubobject<USPPlayerStatusComponent>(TEXT("Status"));
+    ReviveInteraction = CreateDefaultSubobject<USPInteractableComponent>(TEXT("ReviveInteraction"));
+    StatusHUDWidgetClass = USPPlayerStatusHUDWidget::StaticClass();
+
     JumpMaxCount = 1;
     JumpMaxHoldTime = 0.0f;
+}
+
+void ASPPlayerCharacter::PostInitializeComponents()
+{
+    Super::PostInitializeComponents();
+    Status->OnLifeStateChanged.AddUniqueDynamic(this, &ASPPlayerCharacter::HandleLifeStateChanged);
 }
 
 void ASPPlayerCharacter::BeginPlay()
@@ -99,10 +124,13 @@ void ASPPlayerCharacter::BeginPlay()
             GetMesh()->SetOverridePostProcessAnimBP(PoseClass);
         }
     }
+    HandleLifeStateChanged(Status->GetLifeState());
+    EnsureStatusHUD();
 }
 
 void ASPPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    RemoveStatusHUD();
     if (CrouchLocalPlayer.IsValid() && CrouchMappingContext)
     {
         if (auto* Subsystem = CrouchLocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
@@ -127,6 +155,16 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
             *GetName(), *GetNameSafe(PlayerInputComponent));
         return;
     }
+
+#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
+    if (bEnableStatusDebugControls)
+    {
+        Input->BindDebugKey(FInputChord(EKeys::F6), IE_Pressed, this, &ASPPlayerCharacter::DebugStatusKey, false);
+        Input->BindDebugKey(FInputChord(EKeys::F7), IE_Pressed, this, &ASPPlayerCharacter::DebugStatusKey, false);
+        Input->BindDebugKey(FInputChord(EKeys::F7, true, false, false, false), IE_Pressed,
+            this, &ASPPlayerCharacter::DebugResetKey, false);
+    }
+#endif
 
     // 기존 팀 IMC/BP를 재저장하지 않아도 Ctrl 유지형 앉기가 동작한다.
     // Crouch의 bWantsToCrouch는 엔진 SavedMove의 기본 압축 플래그로 예측/복제된다.
@@ -240,6 +278,8 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
             ETriggerEvent::Completed,
             Interactor.Get(),
             &USPInteractorComponent::StopInteract);
+        Input->BindAction(InteractAction, ETriggerEvent::Canceled,
+            Interactor.Get(), &USPInteractorComponent::StopInteract);
     }
 
     // 짧게/길게를 놓을 때 누른 시간으로 가른다.
@@ -289,7 +329,7 @@ void ASPPlayerCharacter::SetupPlayerInputComponent(
 void ASPPlayerCharacter::Move(const FInputActionValue& Value)
 {
     // 금고 직접 해제처럼 조작을 잠그는 대상을 누르는 동안에는 움직이지 않는다.
-    if (Interactor->IsControlLocked())
+    if (IsDowned() || Interactor->IsControlLocked())
     {
         return;
     }
@@ -362,6 +402,7 @@ void ASPPlayerCharacter::Look(const FInputActionValue& Value)
 
 void ASPPlayerCharacter::StartJump()
 {
+    if (IsDowned() || Interactor->IsHolding()) { return; }
     // 같은 Space 상태를 모드에 따라 점프 또는 지속 추진으로 해석한다.
     bUpThrustHeld = true;
     RefreshZeroGravityInput();
@@ -390,11 +431,13 @@ void ASPPlayerCharacter::EndJump()
 
 void ASPPlayerCharacter::HoldCrouch()
 {
+    if (IsDowned() || Interactor->IsHolding()) { return; }
     Crouch();
 }
 
 void ASPPlayerCharacter::ReleaseCrouch()
 {
+    if (IsDowned()) { return; }
     UnCrouch();
 }
 
@@ -413,6 +456,7 @@ void ASPPlayerCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHei
 
 void ASPPlayerCharacter::StartSprint()
 {
+    if (IsDowned()) { return; }
     // Shift 상태는 무중력 아래 추진에도 사용하므로 달리기 가능 여부와 별도로 저장한다.
     bSprintHeld = true;
 
@@ -448,7 +492,8 @@ void ASPPlayerCharacter::UpdateSprintRequest()
 
     const bool bHasForwardInput = MoveInput.Y > FMath::Clamp(SprintForwardInputThreshold, 0.0f, 0.99f);
     const bool bRequested =
-        !Movement->IsCustomGravityMovement()
+        !IsDowned()
+        && !Movement->IsCustomGravityMovement()
         && bSprintHeld
         && bHasForwardInput;
 
@@ -499,6 +544,7 @@ USPInventoryComponent* ASPPlayerCharacter::GetInventory() const
 // 작업자: 김세훈 | 임시 버튼을 우선 사용하고 기존 물건 상호작용으로 이어간다.
 void ASPPlayerCharacter::Interact()
 {
+    if (IsDowned()) { return; }
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
     if (ASPGravitySwitch* Switch = FindGravitySwitchInView())
     {
@@ -519,17 +565,20 @@ float ASPPlayerCharacter::GetHoldProgress() const
 void ASPPlayerCharacter::StartDrop()
 {
     // 길게 누르는 동안에는 이동과 시점 회전 말고 다른 조작은 무시한다.
-    if (Interactor->IsHolding())
+    if (IsDowned() || Interactor->IsHolding())
     {
         return;
     }
 
+    bDropHeld = true;
     DropPressedTime = GetWorld()->GetTimeSeconds();
 }
 
 void ASPPlayerCharacter::FinishDrop()
 {
-    if (Interactor->IsHolding())
+    const bool bWasHeld = bDropHeld;
+    bDropHeld = false;
+    if (!bWasHeld || IsDowned() || Interactor->IsHolding())
     {
         return;
     }
@@ -553,7 +602,7 @@ void ASPPlayerCharacter::FinishDrop()
 
 void ASPPlayerCharacter::SelectSlot(const FInputActionValue& Value)
 {
-    if (Interactor->IsHolding())
+    if (IsDowned() || Interactor->IsHolding())
     {
         return;
     }
@@ -565,7 +614,7 @@ void ASPPlayerCharacter::SelectSlot(const FInputActionValue& Value)
 
 void ASPPlayerCharacter::CycleSlot(const FInputActionValue& Value)
 {
-    if (Interactor->IsHolding())
+    if (IsDowned() || Interactor->IsHolding())
     {
         return;
     }
@@ -587,6 +636,12 @@ void ASPPlayerCharacter::RefreshZeroGravityInput()
         return;
     }
 
+    if (IsDowned())
+    {
+        Movement->SetZeroGravityInput(FVector::ZeroVector);
+        return;
+    }
+
     // Space와 Shift를 동시에 누르면 상하 추진이 상쇄된다. 입력은 이동 기록에 저장/전송된다.
     const float VerticalInput =
         (bUpThrustHeld ? 1.0f : 0.0f)
@@ -605,6 +660,7 @@ void ASPPlayerCharacter::FaceRotation(
     FRotator NewControlRotation,
     float DeltaTime)
 {
+    if (IsDowned()) { return; }
     const USPCharacterMovementComponent* Movement =
         Cast<USPCharacterMovementComponent>(GetCharacterMovement());
 
@@ -651,6 +707,7 @@ void ASPPlayerCharacter::PawnClientRestart()
 
     // 도중 접속이나 다시 Possess된 경우에도 카메라 설정을 적용한다.
     UpdateCameraForMovementMode();
+    EnsureStatusHUD();
 }
 
 void ASPPlayerCharacter::UpdateCameraForMovementMode()
@@ -739,11 +796,178 @@ ASPGravitySwitch* ASPPlayerCharacter::FindGravitySwitchInView() const
 void ASPPlayerCharacter::ServerUseGravitySwitch_Implementation(ASPGravitySwitch* TargetSwitch)
 {
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
-    if (!IsValid(TargetSwitch) || FindGravitySwitchInView() != TargetSwitch)
+    if (IsDowned() || !IsValid(TargetSwitch) || FindGravitySwitchInView() != TargetSwitch)
     {
         // 지연 중 대상/시선이 바뀌는 정상 상황은 로그를 남기지 않는다.
         return;
     }
     TargetSwitch->TryActivate();
+#endif
+}
+
+bool ASPPlayerCharacter::IsDowned() const
+{
+    return Status && Status->IsDowned();
+}
+
+void ASPPlayerCharacter::HandleLifeStateChanged(ESPPlayerLifeState NewState)
+{
+    Interactor->StopInteract();
+    bDropHeld = false;
+    const bool bDowned = NewState == ESPPlayerLifeState::Downed;
+    USPCharacterMovementComponent* Movement = Cast<USPCharacterMovementComponent>(GetCharacterMovement());
+    if (bDowned && !bAppliedDownState)
+    {
+        bAppliedDownState = true;
+        MoveInput = FVector2D::ZeroVector;
+        bSprintHeld = false;
+        bUpThrustHeld = false;
+        bDropHeld = false;
+        DropPressedTime = 0.0;
+        StopJumping();
+        ConsumeMovementInputVector();
+        Interactor->StopInteract();
+        if (Movement)
+        {
+            Movement->SetSprintRequested(false);
+            Movement->SetZeroGravityInput(FVector::ZeroVector);
+            Movement->StopMovementImmediately();
+            if (HasAuthority() && bUseTemporaryDownPose)
+            {
+                Movement->TryEnterDownedPose();
+            }
+            Movement->DisableMovement();
+        }
+        if (HasAuthority()) { Inventory->DropBag(); }
+
+        // 회전된 캡슐이 몸 전체의 구조 판정도 담당한다. 클라이언트는 서버 이동/회전 복제를 따른다.
+        StandingVisibilityResponse = GetCapsuleComponent()->GetCollisionResponseToChannel(ECC_Visibility);
+        GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+        StandingCameraLocation = FirstPersonCamera->GetRelativeLocation();
+        if (bUseTemporaryDownPose)
+        {
+            // 메시의 기본 오프셋과 네트워크 보정은 이동 컴포넌트가 유지한다.
+            // 보정 중의 상대 변환을 새 기준으로 저장하면 원격 몸이 다시 서는 문제가 생긴다.
+            FirstPersonCamera->SetRelativeLocation(FVector(StandingCameraLocation.X, StandingCameraLocation.Y, 0.0));
+        }
+    }
+    else if (!bDowned && bAppliedDownState)
+    {
+        bAppliedDownState = false;
+        GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, StandingVisibilityResponse);
+        if (bUseTemporaryDownPose)
+        {
+            FirstPersonCamera->SetRelativeLocation(StandingCameraLocation);
+        }
+        // 다운 중 Ctrl 해제 입력이 생략됐더라도 이전 웅크리기 요청이 남지 않는다.
+        UnCrouch();
+        if (Movement)
+        {
+            // 다운 중 환경이 바뀌었을 수 있으므로 복귀 시 현재 영역의 중력을 읽는다.
+            const USPGravityWorldSubsystem* Gravity = GetWorld()->GetSubsystem<USPGravityWorldSubsystem>();
+            const bool bZeroGravity = Gravity
+                && Gravity->GetGravityModeAtLocation(GetActorLocation()) == ESPGravityMode::ZeroGravity;
+            Movement->SetMovementMode(MOVE_Custom, bZeroGravity
+                ? USPCharacterMovementComponent::ZeroGravityCustomMode
+                : USPCharacterMovementComponent::GravityRecoveryCustomMode);
+        }
+    }
+    BP_OnLifeStateChanged(NewState);
+    if (HasAuthority() && IsPlayerControlled() && GetController()->GetPawn() == this)
+    {
+        if (ASpacePirateGameMode* Mode = Cast<ASpacePirateGameMode>(GetWorld()->GetAuthGameMode()))
+        {
+            Mode->CheckAllPlayersDowned();
+        }
+    }
+}
+
+void ASPPlayerCharacter::PossessedBy(AController* NewController)
+{
+    Super::PossessedBy(NewController);
+    EnsureStatusHUD();
+    QueueTeamStatusRefresh();
+}
+
+void ASPPlayerCharacter::UnPossessed()
+{
+    Interactor->StopInteract();
+    RemoveStatusHUD();
+    Super::UnPossessed();
+    QueueTeamStatusRefresh();
+}
+
+void ASPPlayerCharacter::QueueTeamStatusRefresh()
+{
+    // PossessedBy 중에는 Controller->Pawn이 아직 갱신 전이다. 빙의가 끝난 뒤 인원을 집계한다.
+    if (HasAuthority())
+    {
+        if (ASpacePirateGameMode* Mode = Cast<ASpacePirateGameMode>(GetWorld()->GetAuthGameMode()))
+        {
+            GetWorld()->GetTimerManager().SetTimerForNextTick(
+                FTimerDelegate::CreateWeakLambda(Mode, [Mode]() { Mode->CheckAllPlayersDowned(); }));
+        }
+    }
+}
+
+void ASPPlayerCharacter::OnRep_Controller()
+{
+    Super::OnRep_Controller();
+    if (IsLocallyControlled()) { EnsureStatusHUD(); }
+    else { RemoveStatusHUD(); }
+}
+
+void ASPPlayerCharacter::EnsureStatusHUD()
+{
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!StatusHUD && bShowStatusDebugHUD && StatusHUDWidgetClass
+        && PC && PC->IsLocalController() && PC->GetLocalPlayer() && HasActorBegunPlay())
+    {
+        StatusHUD = CreateWidget<UUserWidget>(PC, StatusHUDWidgetClass);
+        if (StatusHUD)
+        {
+            if (USPPlayerStatusHUDWidget* DebugHUD = Cast<USPPlayerStatusHUDWidget>(StatusHUD))
+            {
+                DebugHUD->SetShowDebugControls(bEnableStatusDebugControls);
+            }
+            StatusHUD->AddToPlayerScreen(10);
+            StatusHUD->SetVisibility(ESlateVisibility::HitTestInvisible);
+        }
+    }
+}
+
+void ASPPlayerCharacter::RemoveStatusHUD()
+{
+    if (StatusHUD)
+    {
+        StatusHUD->RemoveFromParent();
+        StatusHUD = nullptr;
+    }
+}
+
+void ASPPlayerCharacter::DebugStatusKey(FKey Key, FInputActionValue Value)
+{
+    if (Key == EKeys::F6) { ServerDebugLifeAction(0); }
+    else if (Key == EKeys::F7) { ServerDebugLifeAction(1); }
+}
+
+void ASPPlayerCharacter::DebugResetKey(FKey Key, FInputActionValue Value) { ServerDebugLifeAction(2); }
+
+void ASPPlayerCharacter::ServerDebugLifeAction_Implementation(uint8 Action)
+{
+#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
+    if (!bEnableStatusDebugControls || !IsPlayerControlled()) { return; }
+    if (Action <= 1)
+    {
+        UGameplayStatics::ApplyDamage(this, Action == 0 ? 25.0f : Status->GetMaxHealth(),
+            GetController(), this, UDamageType::StaticClass());
+    }
+    else if (Action == 2 && GetController()->IsLocalController())
+    {
+        if (ASpacePirateGameMode* Mode = Cast<ASpacePirateGameMode>(GetWorld()->GetAuthGameMode()))
+        {
+            Mode->ResetForStage();
+        }
+    }
 #endif
 }

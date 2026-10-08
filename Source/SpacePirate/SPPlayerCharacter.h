@@ -1,5 +1,10 @@
 #pragma once
 
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 상태·구조 컴포넌트, 다운 이벤트, 임시 자세·HUD 설정, 테스트 입력과 생존 인원 집계 연결을 선언한다.
+// 작업자: 김세훈 | 2026-10-08 | 다운 캡슐 정렬 수정
+// 변경 내용: 임시 다운 자세 설정이 메시 단독 회전 대신 캡슐과 몸을 함께 눕히도록 설명을 갱신한다.
+
 // 역할: 입력과 로컬 카메라를 관리한다. 실제 이동/몸 회전/예측은 SPCharacterMovementComponent가 담당한다.
 // NOTICE [TEMP-GRAVITY-SWITCH]: 정식 장치 도입 후 FindGravitySwitchInView/ServerUseGravitySwitch와
 // Interact의 버튼 우선 분기를 교체한다. 기존 화물 상호작용과 영역 시스템은 유지한다.
@@ -8,6 +13,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "SPGravityTypes.h"
+#include "SPPlayerStatusComponent.h"
 #include "SPPlayerCharacter.generated.h"
 
 class ASPCargo;
@@ -20,6 +26,8 @@ class ULocalPlayer;
 class USceneComponent;
 class USPInventoryComponent;
 class USPInteractorComponent;
+class USPInteractableComponent;
+class UUserWidget;
 struct FInputActionValue;
 
 UCLASS()
@@ -41,6 +49,20 @@ public:
         uint8 PreviousCustomMode = 0) override;
 
     virtual void PawnClientRestart() override;
+    virtual void PossessedBy(AController* NewController) override;
+    virtual void UnPossessed() override;
+    virtual void OnRep_Controller() override;
+
+    UFUNCTION(BlueprintPure, Category = "Player|Status")
+    USPPlayerStatusComponent* GetStatusComponent() const { return Status; }
+
+    UFUNCTION(BlueprintPure, Category = "Player|Status")
+    bool IsDowned() const;
+
+    USPInteractableComponent* GetReviveInteraction() const { return ReviveInteraction; }
+
+    /** 피해/다운 시험 입력은 개발 빌드에서만 사용한다. */
+    bool AreStatusDebugControlsEnabled() const { return bEnableStatusDebugControls; }
 
     virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
     virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
@@ -58,6 +80,7 @@ public:
     float GetHoldProgress() const;
 
 protected:
+    virtual void PostInitializeComponents() override;
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void SetupPlayerInputComponent(
@@ -102,6 +125,32 @@ protected:
         BlueprintReadOnly,
         Category = "Components")
     TObjectPtr<USPInteractorComponent> Interactor;
+
+    /** 체력, 피해, 다운과 구조의 규칙. 수치는 이 컴포넌트 Details에서 조정한다. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<USPPlayerStatusComponent> Status;
+
+    /** 쓰러진 플레이어를 대상으로 하는 기존 E 길게 누르기. 규칙은 Life가 연결한다. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<USPInteractableComponent> ReviveInteraction;
+
+    /** 임시 숫자 체력 UI. 별도 Widget Blueprint로 교체할 수 있다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Player|Status|Debug")
+    TSubclassOf<UUserWidget> StatusHUDWidgetClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Player|Status|Debug")
+    bool bShowStatusDebugHUD = true;
+
+    /** F6 피해 25, F7 다운, Shift+F7 호스트의 전체 초기화. Shipping/Test 빌드에서는 동작하지 않는다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Player|Status|Debug")
+    bool bEnableStatusDebugControls = true;
+
+    /** 캡슐과 몸을 함께 눕히는 임시 자세와 낮은 카메라. 정식 다운 처리로 교체할 때 끈다. */
+    UPROPERTY(EditDefaultsOnly, Category = "Player|Status|Presentation")
+    bool bUseTemporaryDownPose = true;
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Player|Status", meta = (DisplayName = "On Status State Changed"))
+    void BP_OnLifeStateChanged(ESPPlayerLifeState NewState);
 
     /** Axis2D: X=좌우, Y=전후. 키 배치는 기존 Input Mapping Context에서 설정한다. */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
@@ -176,6 +225,25 @@ protected:
     float SprintForwardInputThreshold = 0.1f;
 
 private:
+    UFUNCTION()
+    void HandleLifeStateChanged(ESPPlayerLifeState NewState);
+    void EnsureStatusHUD();
+    void RemoveStatusHUD();
+    void DebugStatusKey(FKey Key, FInputActionValue Value);
+    void DebugResetKey(FKey Key, FInputActionValue Value);
+    void QueueTeamStatusRefresh();
+
+    UFUNCTION(Server, Reliable)
+    void ServerDebugLifeAction(uint8 Action);
+
+    UPROPERTY(Transient)
+    TObjectPtr<UUserWidget> StatusHUD;
+
+    bool bAppliedDownState = false;
+    bool bDropHeld = false;
+    FVector StandingCameraLocation = FVector::ZeroVector;
+    ECollisionResponse StandingVisibilityResponse = ECR_Ignore;
+
     void Move(const FInputActionValue& Value);
     void StopMove(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);

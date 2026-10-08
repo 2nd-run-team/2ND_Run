@@ -1,5 +1,8 @@
 #pragma once
 
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 상호작용 시작·진행 시 다운 여부를 확인하는 CanOwnerInteract 선언을 추가한다.
+
 // 역할: 플레이어의 E 상호작용 전부(화물 줍기 포함)를 맡는다. 화면 중앙의 USPInteractableComponent 대상을 찾아
 // 누르고 떼는 요청을 서버로 보내고, 누르는 중인지와 진행률을 알려 준다.
 // 누르는 동안의 입력 무시(이동·시점 외)와 조작 잠금은 캐릭터가 IsHolding / IsControlLocked로 확인한다.
@@ -81,6 +84,7 @@ private:
 
     void UpdateHoldDisplay();
     USPInteractableComponent* FindTargetInView() const;
+    bool CanOwnerInteract() const;
 
     /** 클라이언트는 누른 대상을, 서버는 받아들인 대상을 기억한다. 진행 여부는 대상의 조작자로 확인한다. */
     UPROPERTY(Transient)

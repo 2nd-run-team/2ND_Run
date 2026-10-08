@@ -1,5 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 임시 체력 HUD의 UMG 글꼴·색상 스타일을 위해 SlateCore 모듈 의존성을 추가한다.
+
 using UnrealBuildTool;
 
 public class SpacePirate : ModuleRules
@@ -22,7 +25,7 @@ public class SpacePirate : ModuleRules
 		});
 
 		// 무중력 이동 패킷의 FVector_NetQuantize10 직렬화 구현에 필요하다.
-		PrivateDependencyModuleNames.AddRange(new string[] { "NetCore" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "NetCore", "SlateCore" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"SpacePirate",

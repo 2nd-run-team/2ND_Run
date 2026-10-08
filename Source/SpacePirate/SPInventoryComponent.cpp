@@ -1,7 +1,11 @@
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 다운 중 줍기·버리기·던지기·슬롯 변경을 제한하고 던지기 입력의 비정상 수치를 거부한다.
+
 #include "SPInventoryComponent.h"
 
 #include "SPDebug.h"
 #include "SPCargo.h"
+#include "SPPlayerStatusComponent.h"
 
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -65,7 +69,9 @@ int32 USPInventoryComponent::FindSlotForPickUp() const
 
 bool USPInventoryComponent::CanPickUp(const ASPCargo* Item) const
 {
-    return IsValid(Item)
+    const USPPlayerStatusComponent* Status = GetOwner()->FindComponentByClass<USPPlayerStatusComponent>();
+    return (!Status || !Status->IsDowned())
+        && IsValid(Item)
         && !Item->IsCarried()
         && !(Item->IsBag() && HasBag())
         && FindSlotForPickUp() != INDEX_NONE;
@@ -96,11 +102,15 @@ void USPInventoryComponent::PickUp(ASPCargo* Item)
 
 void USPInventoryComponent::ServerDrop_Implementation()
 {
+    const USPPlayerStatusComponent* Status = GetOwner()->FindComponentByClass<USPPlayerStatusComponent>();
+    if (Status && Status->IsDowned()) { return; }
     DropActiveItem(FVector::ZeroVector);
 }
 
 void USPInventoryComponent::ServerThrow_Implementation(float Charge)
 {
+    const USPPlayerStatusComponent* Status = GetOwner()->FindComponentByClass<USPPlayerStatusComponent>();
+    if ((Status && Status->IsDowned()) || !FMath::IsFinite(Charge)) { return; }
     const ASPCargo* Item = GetActiveItem();
     const APawn* OwnerPawn = GetOwner<APawn>();
 
@@ -136,6 +146,8 @@ void USPInventoryComponent::DropActiveItem(const FVector& Velocity)
 
 void USPInventoryComponent::ServerSelectSlot_Implementation(int32 SlotIndex)
 {
+    const USPPlayerStatusComponent* Status = GetOwner()->FindComponentByClass<USPPlayerStatusComponent>();
+    if (Status && Status->IsDowned()) { return; }
     if (!Slots.IsValidIndex(SlotIndex) || SlotIndex == ActiveSlot)
     {
         return;
@@ -146,6 +158,8 @@ void USPInventoryComponent::ServerSelectSlot_Implementation(int32 SlotIndex)
 
 void USPInventoryComponent::ServerCycleSlot_Implementation(int32 Direction)
 {
+    const USPPlayerStatusComponent* Status = GetOwner()->FindComponentByClass<USPPlayerStatusComponent>();
+    if (Status && Status->IsDowned()) { return; }
     if (Direction == 0)
     {
         return;

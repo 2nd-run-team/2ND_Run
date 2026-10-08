@@ -1,5 +1,8 @@
 #pragma once
 
+// 작업자: 김세훈 | 2026-10-08 | 다운 캡슐 정렬 수정
+// 변경 내용: 기존 회전 충돌 검사와 이동 복제를 사용하는 서버 전용 다운 자세 진입을 추가한다.
+
 // 역할: 중력/무중력 이동, 충돌 처리, 클라이언트 예측과 서버 보정을 담당한다.
 // 튜닝: 플레이어 BP의 Character Movement 컴포넌트에서 기본값을 설정한다.
 // 아래 값은 자동 복제되지 않는다. 서버와 클라이언트가 같은 BP 기본값을 사용해야 한다.
@@ -62,6 +65,9 @@ public:
         BlueprintAuthorityOnly,
         Category = "Movement|Gravity")
     bool SetGravityMode(ESPGravityMode NewMode);
+
+    /** 임시 다운 자세. 양쪽 회전이 모두 막히면 기존 캡슐 방향을 유지한다. 서버에서만 호출한다. */
+    bool TryEnterDownedPose();
 
     // 몸 기준 X=전후, Y=좌우, Z=상하. 여기서는 저장만 하고 PhysCustom에서 추진한다.
     void SetZeroGravityInput(const FVector& Input);

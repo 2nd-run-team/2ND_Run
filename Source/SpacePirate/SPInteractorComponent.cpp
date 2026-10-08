@@ -1,6 +1,10 @@
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 로컬·서버 상호작용 시작에 다운 검사를 추가하고 다운 중 진행 작업을 취소한다.
+
 #include "SPInteractorComponent.h"
 
 #include "SPInteractableComponent.h"
+#include "SPPlayerStatusComponent.h"
 
 #include "Blueprint/UserWidget.h"
 #include "Engine/Engine.h"
@@ -17,12 +21,24 @@ USPInteractorComponent::USPInteractorComponent()
 
 void USPInteractorComponent::Press()
 {
+    if (!CanOwnerInteract())
+    {
+        return;
+    }
+
     // 클라이언트에서 미리 걸러 불필요한 RPC를 줄인다. 최종 판정은 서버가 같은 규칙으로 다시 한다.
     USPInteractableComponent* Target = FindTargetInView();
     if (Target && !Target->GetCurrentUser() && Target->CanInteract(GetOwner<APawn>()))
     {
         StartInteract(Target);
     }
+}
+
+bool USPInteractorComponent::CanOwnerInteract() const
+{
+    const APawn* OwnerPawn = GetOwner<APawn>();
+    const USPPlayerStatusComponent* Life = OwnerPawn ? OwnerPawn->FindComponentByClass<USPPlayerStatusComponent>() : nullptr;
+    return OwnerPawn && (!Life || !Life->IsDowned());
 }
 
 USPInteractableComponent* USPInteractorComponent::FindTargetInView() const
@@ -58,7 +74,7 @@ USPInteractableComponent* USPInteractorComponent::FindTargetInView() const
 
 void USPInteractorComponent::StartInteract(USPInteractableComponent* Target)
 {
-    if (!Target || IsHolding())
+    if (!Target || IsHolding() || !CanOwnerInteract())
     {
         return;
     }
@@ -84,7 +100,7 @@ void USPInteractorComponent::ServerStartInteract_Implementation(AActor* TargetAc
     USPInteractableComponent* Target =
         TargetActor ? TargetActor->FindComponentByClass<USPInteractableComponent>() : nullptr;
 
-    if (!OwnerPawn || !Target || IsHolding())
+    if (!OwnerPawn || !Target || IsHolding() || !CanOwnerInteract())
     {
         return;
     }
@@ -129,6 +145,10 @@ void USPInteractorComponent::TickComponent(
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
     const APawn* OwnerPawn = GetOwner<APawn>();
+    if (OwnerPawn && OwnerPawn->HasAuthority() && !CanOwnerInteract())
+    {
+        ServerStopInteract_Implementation();
+    }
     if (OwnerPawn && OwnerPawn->IsLocallyControlled())
     {
         UpdateHoldDisplay();

@@ -1,3 +1,6 @@
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 다운된 플레이어를 시야·청각·목격 전달·추적 대상에서 제외한다.
+
 #include "SPGuardCharacter.h"
 #include "SPGuardAlertSubsystem.h"
 #include "SPGuardPatrolRoute.h"
@@ -67,7 +70,7 @@ FVector ASPGuardCharacter::GetSightOrigin() const
 
 bool ASPGuardCharacter::CanSeePlayer(const ASPPlayerCharacter* Player) const
 {
-    if (!IsValid(Player) || Player == this || !Player->IsPlayerControlled()) { return false; }
+    if (!IsValid(Player) || Player == this || !Player->IsPlayerControlled() || Player->IsDowned()) { return false; }
     const FVector Eye = GetSightOrigin();
     const float Height = Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
     // 서 있는 자세/앉기의 실제 캡슐 높이에 맞춰 상체와 몸통을 검사한다.
@@ -89,7 +92,7 @@ bool ASPGuardCharacter::CanSeePlayer(const ASPPlayerCharacter* Player) const
 
 bool ASPGuardCharacter::CanHearPlayer(const ASPPlayerCharacter* Player) const
 {
-    if (!bHearFootsteps || !IsValid(Player) || Player == this || !Player->IsPlayerControlled()
+    if (!bHearFootsteps || !IsValid(Player) || Player == this || !Player->IsPlayerControlled() || Player->IsDowned()
         || Player->bIsCrouched || !Player->GetCharacterMovement()->IsMovingOnGround()
         || Player->GetVelocity().SizeSquared2D() < FMath::Square(MinimumFootstepSpeed)
         || FVector::DistSquared(GetActorLocation(), Player->GetActorLocation()) > FMath::Square(HearingDistance))
@@ -144,7 +147,7 @@ void ASPGuardCharacter::UpdateHearing(float DeltaSeconds)
 
 void ASPGuardCharacter::ReceiveSighting(ASPPlayerCharacter* Player, const FVector& Location)
 {
-    if (!HasAuthority() || !IsValid(Player) || !Player->IsPlayerControlled()) { return; }
+    if (!HasAuthority() || !IsValid(Player) || !Player->IsPlayerControlled() || Player->IsDowned()) { return; }
     // 이미 눈앞에서 쫓는 다른 범인을 무선 신호만으로 바꾸지 않는다.
     if (IsValid(TargetPlayer) && TargetPlayer != Player && CanSeePlayer(TargetPlayer)) { return; }
     TargetPlayer = Player;
@@ -239,7 +242,7 @@ void ASPGuardCharacter::UpdateBehavior(float DeltaSeconds)
     GetCharacterMovement()->MaxWalkSpeed = TargetPlayer ? ChaseSpeed : PatrolSpeed;
     if (TargetPlayer)
     {
-        if (!IsValid(TargetPlayer) || !TargetPlayer->IsPlayerControlled()) { ReturnToPatrol(); return; }
+        if (!IsValid(TargetPlayer) || !TargetPlayer->IsPlayerControlled() || TargetPlayer->IsDowned()) { ReturnToPatrol(); return; }
         const float Distance = FVector::Dist2D(GetActorLocation(), LastSeenLocation);
         if (bTargetVisible)
         {

@@ -1,3 +1,8 @@
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 다운 상태에서 이동 틱·서버 이동 패킷·중력 전환을 제한하고 잔여 이동 입력을 정리한다.
+// 작업자: 김세훈 | 2026-10-08 | 다운 캡슐 정렬 수정
+// 변경 내용: 캡슐을 충돌 검사 후 옆으로 눕히고 지상 높이를 조정하며 소유 클라이언트에도 회전을 보정한다.
+
 #include "SPCharacterMovementComponent.h"
 #include "SPDebug.h"
 #include "SPGravityWorldSubsystem.h"
@@ -257,6 +262,11 @@ USPCharacterMovementComponent::USPCharacterMovementComponent()
 void USPCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
     FActorComponentTickFunction* ThisTickFunction)
 {
+    if (const ASPPlayerCharacter* Player = Cast<ASPPlayerCharacter>(CharacterOwner); Player && Player->IsDowned())
+    {
+        StopMovementImmediately();
+        DisableMovement();
+    }
     RefreshGravityFromZones();
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
@@ -264,6 +274,16 @@ void USPCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick Ti
 // 작업자: 김세훈 | 원격 입력 처리에서도 현재 서버 위치의 환경을 확인한다.
 void USPCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
+    if (const ASPPlayerCharacter* Player = Cast<ASPPlayerCharacter>(CharacterOwner); Player && Player->IsDowned())
+    {
+        bWantsToCrouch = CharacterOwner->bIsCrouched;
+        CharacterOwner->StopJumping();
+        bSprintRequested = false;
+        LocalThrustInput = FVector::ZeroVector;
+        StopMovementImmediately();
+        DisableMovement();
+        return;
+    }
     Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
     RefreshGravityFromZones();
 }
@@ -352,6 +372,10 @@ bool USPCharacterMovementComponent::HasForwardAcceleration() const
 
 float USPCharacterMovementComponent::GetMaxSpeed() const
 {
+    if (const ASPPlayerCharacter* Player = Cast<ASPPlayerCharacter>(CharacterOwner); Player && Player->IsDowned())
+    {
+        return 0.0f;
+    }
     if (IsGravityRecovery())
     {
         return FMath::Max(MaxWalkSpeed, 0.0f);
@@ -485,6 +509,10 @@ void USPCharacterMovementComponent::SetZeroGravityInput(
 bool USPCharacterMovementComponent::SetGravityMode(
     ESPGravityMode NewMode)
 {
+    if (const ASPPlayerCharacter* Player = Cast<ASPPlayerCharacter>(CharacterOwner); Player && Player->IsDowned())
+    {
+        return false;
+    }
     if (!HasValidData())
     {
         SP_DEBUG_LOG(
@@ -544,6 +572,46 @@ bool USPCharacterMovementComponent::SetGravityMode(
     // 소유 클라이언트에도 새 모드·위치·회전을 보정으로 전달.
     ForceClientAdjustment();
 
+    return true;
+}
+
+bool USPCharacterMovementComponent::TryEnterDownedPose()
+{
+    if (!HasValidData() || !CharacterOwner->HasAuthority())
+    {
+        return false;
+    }
+
+    const bool bWasOnGround = IsMovingOnGround();
+    const UCapsuleComponent* Capsule = CharacterOwner->GetCapsuleComponent();
+    const FQuat PreviousRotation = UpdatedComponent->GetComponentQuat();
+    const float Radius = Capsule->GetScaledCapsuleRadius();
+    const float SegmentHalfLength = Capsule->GetScaledCapsuleHalfHeight() - Radius;
+    const float PreviousVerticalExtent = Radius + SegmentHalfLength * FMath::Abs(PreviousRotation.GetUpVector().Z);
+
+    // 메시만 회전시키지 않고 루트 캡슐을 회전시켜 몸과 상호작용 판정이 함께 눕게 한다.
+    // 회전 경로에 벽/동료가 있으면 반대쪽을 시도하며, 두 방향 모두 막히면 관통시키지 않는다.
+    // 이전 복구 틱 전에 다시 다운돼도 회전이 누적되지 않도록 Yaw 기준의 절대 자세를 만든다.
+    const FQuat UprightRotation = FRotator(0.0, PreviousRotation.Rotator().Yaw, 0.0).Quaternion();
+    const FQuat SideRotation = UprightRotation * FQuat(FVector::ForwardVector, HALF_PI);
+    const FQuat OppositeRotation = UprightRotation * FQuat(FVector::ForwardVector, -HALF_PI);
+    if (!TrySetBodyRotation(SideRotation) && !TrySetBodyRotation(OppositeRotation))
+    {
+        return false;
+    }
+
+    if (bWasOnGround)
+    {
+        const float DownVerticalExtent = Radius + SegmentHalfLength * FMath::Abs(UpdatedComponent->GetUpVector().Z);
+        const float LowerDistance = FMath::Max(0.0f, PreviousVerticalExtent - DownVerticalExtent);
+        FHitResult Hit;
+        SafeMoveUpdatedComponent(FVector(0.0, 0.0, -LowerDistance), UpdatedComponent->GetComponentQuat(), true, Hit);
+    }
+
+    bJustTeleported = true;
+    CharacterOwner->ForceNetUpdate();
+    // AutonomousProxy는 일반 액터 이동 복제를 받지 않으므로 기존 위치/회전 보정도 요청한다.
+    ForceClientAdjustment();
     return true;
 }
 
@@ -910,6 +978,15 @@ void USPCharacterMovementComponent::MoveAutonomous(
     uint8 CompressedFlags,
     const FVector& NewAccel)
 {
+    if (const ASPPlayerCharacter* Player = Cast<ASPPlayerCharacter>(CharacterOwner); Player && Player->IsDowned())
+    {
+        LocalThrustInput = FVector::ZeroVector;
+        bSprintRequested = false;
+        StopMovementImmediately();
+        DisableMovement();
+        Super::MoveAutonomous(ClientTimeStamp, DeltaTime, 0, FVector::ZeroVector);
+        return;
+    }
     // 서버는 로컬 키 이벤트를 받지 않는다. 해당 이동 패킷의 몸 기준 입력을 먼저 복원한다.
     if (const FCharacterNetworkMoveData* BaseMoveData =
         GetCurrentNetworkMoveData())

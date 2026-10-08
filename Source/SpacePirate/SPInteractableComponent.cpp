@@ -1,6 +1,11 @@
+// 작업자: 김세훈 | 2026-10-08 | 플레이어 상태 MVP 수정
+// 변경 내용: 다운된 조작자를 거부하고 이동·시야 차단에 따른 취소와 거리 입력값 검증을 추가한다.
+
 #include "SPInteractableComponent.h"
 
 #include "SPDebug.h"
+#include "SPPlayerStatusComponent.h"
+#include "Camera/CameraComponent.h"
 
 #include "Engine/World.h"
 #include "GameFramework/GameStateBase.h"
@@ -39,16 +44,48 @@ void USPInteractableComponent::BeginPlay()
 
 bool USPInteractableComponent::CanInteract_Implementation(APawn* User) const
 {
-    return !CanInteractNative.IsBound() || CanInteractNative.Execute(User);
+    return IsUserAvailable(User) && (!CanInteractNative.IsBound() || CanInteractNative.Execute(User));
+}
+
+bool USPInteractableComponent::IsUserAvailable(const APawn* User) const
+{
+    if (!IsValid(User))
+    {
+        return false;
+    }
+
+    const USPPlayerStatusComponent* Life = User->FindComponentByClass<USPPlayerStatusComponent>();
+    return !Life || !Life->IsDowned();
+}
+
+bool USPInteractableComponent::HasLineOfSight(const APawn* User) const
+{
+    if (!bRequireLineOfSight)
+    {
+        return true;
+    }
+    if (!User || !GetOwner() || !GetWorld())
+    {
+        return false;
+    }
+
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SPInteractLineOfSight), false, User);
+    Params.AddIgnoredActor(GetOwner());
+    const UCameraComponent* Camera = User->FindComponentByClass<UCameraComponent>();
+    const FVector ViewLocation = Camera ? Camera->GetComponentLocation() : User->GetPawnViewLocation();
+    return !GetWorld()->LineTraceTestByChannel(ViewLocation, GetOwner()->GetActorLocation(),
+        ECC_Visibility, Params);
 }
 
 bool USPInteractableComponent::TryInteract(APawn* User, float MaxDistance)
 {
     // 동시 요청의 패배, 거리 초과, 조건 불충족은 정상 흐름이라 기록하지 않는다.
     if (!ensure(GetOwner() && GetOwner()->HasAuthority())
-        || !IsValid(User)
+        || !IsUserAvailable(User)
         || CurrentUser
+        || !FMath::IsFinite(MaxDistance) || MaxDistance < 0.0f
         || User->GetDistanceTo(GetOwner()) > MaxDistance
+        || !HasLineOfSight(User)
         || !CanInteract(User))
     {
         return false;
@@ -65,13 +102,14 @@ bool USPInteractableComponent::TryInteract(APawn* User, float MaxDistance)
     StartTime = GetSyncedTime();
     HeldSeconds = 0.0f;
     AllowedDistance = MaxDistance;
+    UserStartLocation = User->GetActorLocation();
     SetComponentTickEnabled(true);
     return true;
 }
 
 void USPInteractableComponent::CancelBy(const APawn* User)
 {
-    if (User && CurrentUser == User)
+    if (GetOwner() && GetOwner()->HasAuthority() && User && CurrentUser == User)
     {
         Finish(false);
     }
@@ -84,9 +122,17 @@ void USPInteractableComponent::TickComponent(
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+    if (!GetOwner() || !GetOwner()->HasAuthority())
+    {
+        return;
+    }
+
     // ponytail: 거리는 액터 원점 기준이다. 원점이 표면에서 먼 큰 대상(긴 단말대 등)이 생기면 바운드 기준으로 바꾼다.
-    if (!IsValid(CurrentUser)
+    if (!IsUserAvailable(CurrentUser)
         || CurrentUser->GetDistanceTo(GetOwner()) > AllowedDistance
+        || (bCancelOnMovement && FVector::DistSquared(CurrentUser->GetActorLocation(), UserStartLocation)
+            > FMath::Square(FMath::Max(0.0f, MovementCancelTolerance)))
+        || !HasLineOfSight(CurrentUser)
         || !CanInteract(CurrentUser))
     {
         Finish(false);

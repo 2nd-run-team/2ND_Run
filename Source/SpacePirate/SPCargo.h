@@ -55,6 +55,12 @@ public:
 
 	USPInteractableComponent* GetInteractable() const { return Interactable; }
 
+	/**
+	 * 서버 전용. 보관함 안에 놓인 물건으로 표시한다(ASPOpenable이 시작할 때 부른다).
+	 * 처음 줍는 순간만 범죄(ContainerTheft)로 보고, 주우면 표시를 지운다. 내려놓았다 다시 줍는 것은 일반 줍기다.
+	 */
+	void MarkStoredInContainer();
+
 protected:
 	/** 이름은 기존 BP의 메시 설정을 유지하려고 바꾸지 않는다. */
 	UPROPERTY(VisibleAnywhere, Category = "Item")

@@ -12,6 +12,34 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 
+namespace
+{
+    /**
+     * 한 액터에 대상이 여럿이면(금고: 드릴 설치와 직접 해제) 이 사람이 지금 쓸 수 있는 첫 대상을 고른다.
+     * 쓸 수 있는 대상이 없으면 거절 안내가 있는 첫 대상을, 그것도 없으면 첫 대상을 돌려준다.
+     * 클라이언트의 화면 중앙 대상 찾기와 서버의 요청 처리가 같은 규칙을 쓴다.
+     */
+    USPInteractableComponent* PickTarget(const AActor* Actor, APawn* User)
+    {
+        TInlineComponentArray<USPInteractableComponent*> Targets(Actor);
+        for (USPInteractableComponent* Target : Targets)
+        {
+            if (!Target->GetCurrentUser() && Target->CanInteract(User))
+            {
+                return Target;
+            }
+        }
+        for (USPInteractableComponent* Target : Targets)
+        {
+            if (!Target->GetBlockedPrompt(User).IsEmpty())
+            {
+                return Target;
+            }
+        }
+        return Targets.Num() > 0 ? Targets[0] : nullptr;
+    }
+}
+
 USPInteractorComponent::USPInteractorComponent()
 {
     // 진행 바 표시는 로컬 플레이어에서만 하지만, 빙의 시점이 늦을 수 있어 틱에서 확인한다.
@@ -27,8 +55,20 @@ void USPInteractorComponent::Press()
     }
 
     // 클라이언트에서 미리 걸러 불필요한 RPC를 줄인다. 최종 판정은 서버가 같은 규칙으로 다시 한다.
+    APawn* OwnerPawn = GetOwner<APawn>();
     USPInteractableComponent* Target = FindTargetInView();
-    if (Target && !Target->GetCurrentUser() && Target->CanInteract(GetOwner<APawn>()))
+    if (!Target)
+    {
+        return;
+    }
+    if (!Target->CanInteract(OwnerPawn))
+    {
+        // 거절 이유를 잠깐 보여 준다. 문구는 표시하는 동안 대상에서 다시 읽으므로 남은 시간 같은 값이 갱신된다.
+        BlockedTarget = Target;
+        BlockedMessageEndTime = GetWorld()->GetTimeSeconds() + BlockedMessageSeconds;
+        return;
+    }
+    if (!Target->GetCurrentUser())
     {
         StartInteract(Target);
     }
@@ -67,9 +107,7 @@ USPInteractableComponent* USPInteractorComponent::FindTargetInView() const
         FCollisionShape::MakeSphere(TraceRadius),
         Params);
 
-    return bHit && Hit.GetActor()
-        ? Hit.GetActor()->FindComponentByClass<USPInteractableComponent>()
-        : nullptr;
+    return bHit && Hit.GetActor() ? PickTarget(Hit.GetActor(), GetOwner<APawn>()) : nullptr;
 }
 
 void USPInteractorComponent::StartInteract(USPInteractableComponent* Target)
@@ -97,8 +135,7 @@ void USPInteractorComponent::StopInteract()
 void USPInteractorComponent::ServerStartInteract_Implementation(AActor* TargetActor)
 {
     APawn* OwnerPawn = GetOwner<APawn>();
-    USPInteractableComponent* Target =
-        TargetActor ? TargetActor->FindComponentByClass<USPInteractableComponent>() : nullptr;
+    USPInteractableComponent* Target = TargetActor ? PickTarget(TargetActor, OwnerPawn) : nullptr;
 
     if (!OwnerPawn || !Target || IsHolding() || !CanOwnerInteract())
     {
@@ -137,6 +174,14 @@ FText USPInteractorComponent::GetHoldPrompt() const
     return IsHolding() ? HoldTarget->Prompt : FText::GetEmpty();
 }
 
+FText USPInteractorComponent::GetBlockedMessage() const
+{
+    const UWorld* World = GetWorld();
+    return BlockedTarget.IsValid() && World && World->GetTimeSeconds() < BlockedMessageEndTime
+        ? BlockedTarget->GetBlockedPrompt(GetOwner<APawn>())
+        : FText::GetEmpty();
+}
+
 void USPInteractorComponent::TickComponent(
     float DeltaTime,
     ELevelTick TickType,
@@ -157,19 +202,31 @@ void USPInteractorComponent::TickComponent(
 
 void USPInteractorComponent::UpdateHoldDisplay()
 {
-    if (!HoldProgressWidgetClass)
-    {
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
-        // [TEMP-HOLD-DEBUG] WBP_SPHoldProgress를 지정하면 이 표시는 나오지 않는다.
-        // PIE 창들은 GEngine 메시지를 공유해 다른 창에 그려질 수 있으므로 소유자 이름으로 구분한다.
-        if (GEngine && IsHolding())
+    // [TEMP-HOLD-DEBUG] 위젯이 없을 때의 진행 표시와 거절 안내를 화면 디버그 텍스트로 보여 준다.
+    // 거절 안내는 HUD를 만들 때(프로토타입 최후반) 위젯으로 옮긴다. 그때까지는 위젯이 있어도 여기서 보여 준다.
+    // PIE 창들은 GEngine 메시지를 공유해 다른 창에 그려질 수 있으므로 소유자 이름으로 구분한다.
+    if (GEngine)
+    {
+        const FText BlockedMessage = GetBlockedMessage();
+        if (!HoldProgressWidgetClass && IsHolding())
         {
             GEngine->AddOnScreenDebugMessage(
                 static_cast<uint64>(GetUniqueID()), 0.0f, FColor::Yellow,
                 FString::Printf(TEXT("%s  E 길게: %s  %3.0f%%"),
                     *GetNameSafe(GetOwner()), *GetHoldPrompt().ToString(), GetHoldProgress() * 100.0f));
         }
+        else if (!BlockedMessage.IsEmpty())
+        {
+            GEngine->AddOnScreenDebugMessage(
+                static_cast<uint64>(GetUniqueID()), 0.0f, FColor::Red,
+                FString::Printf(TEXT("%s  %s"), *GetNameSafe(GetOwner()), *BlockedMessage.ToString()));
+        }
+    }
 #endif
+
+    if (!HoldProgressWidgetClass)
+    {
         return;
     }
 

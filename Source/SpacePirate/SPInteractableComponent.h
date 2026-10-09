@@ -19,6 +19,7 @@ class APawn;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSPInteractCompletedSignature, APawn*, User);
 DECLARE_MULTICAST_DELEGATE_OneParam(FSPInteractCompletedNative, APawn*);
 DECLARE_DELEGATE_RetVal_OneParam(bool, FSPCanInteractNative, APawn*);
+DECLARE_DELEGATE_RetVal_OneParam(FText, FSPBlockedPromptNative, APawn*);
 
 UCLASS(ClassGroup = (SpacePirate), meta = (BlueprintSpawnableComponent))
 class SPACEPIRATE_API USPInteractableComponent : public UActorComponent
@@ -62,6 +63,18 @@ public:
     /** 화면 안내에 쓸 행동 이름(예: 포장, 구조). */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
     FText Prompt;
+
+    /** E를 눌렀는데 CanInteract가 거절하면 잠깐 보여 줄 안내(예: 키카드 필요). 비우면 안내하지 않는다. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interact")
+    FText BlockedPrompt;
+
+    /** 남은 시간처럼 바뀌는 거절 안내가 필요한 C++ 소유자가 묶는다. 묶여 있으면 BlockedPrompt 대신 쓴다. */
+    FSPBlockedPromptNative BlockedPromptNative;
+
+    FText GetBlockedPrompt(APawn* User) const
+    {
+        return BlockedPromptNative.IsBound() ? BlockedPromptNative.Execute(User) : BlockedPrompt;
+    }
 
     /** 범죄 작업만 명시적으로 지정한다. 일반 줍기·가방 운반 등에 사용하는 상호작용은 None을 유지한다. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interact|Crime") ESPCrimeKind CrimeKind = ESPCrimeKind::None;

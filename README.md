@@ -6,6 +6,9 @@
 Unreal Engine **5.8.2** C++ 프로젝트. 실행 파일은 `SpacePirate.uproject`
 입니다. 프로젝트와 C++ 모듈 이름은 `SpacePirate`이며 저장소 이름은 `2ND_Run`입니다.
 
+최대 4인 협동 1인칭 우주 화물열차 강탈 게임(가제)입니다. 정류장 사전 작업 → 피날레 열차 →
+탈출 구역 출발과 정산으로 한 사이클을 돕니다. 지금은 잠입 강탈 컨셉으로 1차 MVP를 만들고 있습니다.
+
 ## 요구 사항
 
 | 항목 | 버전 |
@@ -86,8 +89,13 @@ C++ 프로젝트라 clone 직후에는 컴파일이 필요합니다. `.uproject`
 
 ```
 Source/       C++ 소스 — 머지 가능, 락 불필요
+  SpacePirate/        게임 코드 (SP* 클래스)
+  SpacePirate/Tests/  자동화 테스트 (SpacePirate.*)
 Content/      에셋 — LFS 관리, 수정 전 락 필요
+  SpacePirate/        게임 에셋 (새 에셋은 여기에)
 Config/       프로젝트 설정 — 변경 시 팀 공유
+Docs/         기능별 문서 (PlayerStatus, TrainFreight 등)
+Tools/        에셋 검증·PIE 검증 스크립트
 ```
 
 `Intermediate/`, `Saved/`, `Binaries/`, `DerivedDataCache/`, `*.sln` 은
@@ -138,7 +146,22 @@ git lfs unlock Content/경로/파일.umap   # 푸시 후 해제
 머지할 수 있습니다. 대신 `Source/` 를 건드린 PR 은 머지 후 전원이 리빌드해야
 하므로 팀 채널에 알려주세요.
 
+**줄끝:** `.h` `.cpp` `.cs` `.py` `.ini` 는 CRLF 로 저장합니다(`.gitattributes` ·
+`.editorconfig`). 스크립트로 파일을 고쳤다면 커밋 전에 `git diff --check` 로 확인하세요.
+
 자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md) 를 보세요.
+
+## 자동화 테스트
+
+`Source/SpacePirate/Tests/` 의 테스트는 에디터를 닫고 빌드한 뒤 실행합니다.
+
+```bash
+"D:/UE_5.8/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" "<저장소 경로>/SpacePirate.uproject" \n  -ExecCmds="Automation RunTests SpacePirate; Quit" -unattended -nullrhi -nosplash -log
+```
+
+결과는 `Saved/Logs/SpacePirate.log` 의 `Test Completed` 줄에서 확인합니다.
+`SpacePirate.Inventory` 처럼 이름을 좁혀 일부만 돌릴 수 있습니다. `hand_r` 소켓 경고는
+테스트 캐릭터에 메시가 없어서 나오는 정상 경고입니다.
 
 ## 문제 해결
 

@@ -40,6 +40,7 @@ public:
     void StopInteract();
 
     /** 서버가 이 플레이어의 누르기를 받아들여 진행 중인지. 서버와 클라이언트 모두에서 쓸 수 있다. */
+    UFUNCTION(BlueprintPure, Category = "Interact")
     bool IsHolding() const;
 
     /** 누르는 대상이 이동과 시점 회전을 막는지(금고 직접 해제). */
@@ -52,6 +53,10 @@ public:
     /** 누르는 대상의 행동 이름(예: 포장). 누르는 중이 아니면 비어 있다. */
     UFUNCTION(BlueprintPure, Category = "Interact")
     FText GetHoldPrompt() const;
+
+    /** E를 눌렀는데 거절된 이유(예: 키카드 필요). 거절 뒤 BlockedMessageSeconds 동안만 있고 그 밖에는 비어 있다. 로컬 플레이어에서만 의미가 있다. HUD를 만들 때 위젯이 읽는다. */
+    UFUNCTION(BlueprintPure, Category = "Interact")
+    FText GetBlockedMessage() const;
 
 protected:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -71,7 +76,11 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Interact", AdvancedDisplay)
     TEnumAsByte<ECollisionChannel> TraceChannel = ECC_Visibility;
 
-    /** 누르는 동안 화면 가운데에 띄울 위젯(WBP_SPHoldProgress). 비우면 디버그 텍스트로 대신한다. */
+    /** 거절 안내를 보여 주는 시간(초). */
+    UPROPERTY(EditDefaultsOnly, Category = "Interact", meta = (ClampMin = "0.0", Units = "s"))
+    float BlockedMessageSeconds = 1.5f;
+
+    /** 누르는 동안 화면 가운데에 띄울 위젯(WBP_SPHoldProgress). 비우면 디버그 텍스트로 대신한다. 거절 안내는 HUD 전까지 디버그 텍스트로만 보인다. */
     UPROPERTY(EditDefaultsOnly, Category = "Interact")
     TSubclassOf<UUserWidget> HoldProgressWidgetClass;
 
@@ -92,4 +101,8 @@ private:
 
     UPROPERTY(Transient)
     TObjectPtr<UUserWidget> HoldWidget;
+
+    /** 로컬 전용. 마지막으로 거절한 대상과 안내를 끝낼 시각(월드 시간). */
+    TWeakObjectPtr<USPInteractableComponent> BlockedTarget;
+    double BlockedMessageEndTime = 0.0;
 };

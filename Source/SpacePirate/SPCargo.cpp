@@ -42,9 +42,21 @@ bool ASPCargo::CanBePickedUpBy(APawn* User) const
 
 void ASPCargo::HandlePickedUp(APawn* User)
 {
+	// 범죄 보고는 완료 알림보다 먼저 끝나므로 여기서 지워도 이번 줍기는 범죄로 남는다.
+	Interactable->CrimeKind = ESPCrimeKind::None;
+
 	if (USPInventoryComponent* Inventory = User ? User->FindComponentByClass<USPInventoryComponent>() : nullptr)
 	{
 		Inventory->PickUp(this);
+	}
+}
+
+void ASPCargo::MarkStoredInContainer()
+{
+	if (HasAuthority())
+	{
+		Interactable->CrimeKind = ESPCrimeKind::ContainerTheft;
+		Interactable->bInstantCrime = true;
 	}
 }
 

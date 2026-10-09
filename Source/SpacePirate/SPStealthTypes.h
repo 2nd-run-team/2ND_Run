@@ -3,7 +3,8 @@
 #include "SPStealthTypes.generated.h"
 
 UENUM(BlueprintType)
-enum class ESPCrimeKind : uint8 { None, Pickpocket, SecurityTerminal, VaultWork, LootPacking, SuppressionTool };
+// KeycardDoor 이후는 인벤토리·아이템 쪽 열기 대상(SPOpenable)과 보관함 물건 줍기에 쓴다. 기존 값의 순서는 바꾸지 않는다.
+enum class ESPCrimeKind : uint8 { None, Pickpocket, SecurityTerminal, VaultWork, LootPacking, SuppressionTool, KeycardDoor, ContainerOpening, ContainerTheft };
 class APlayerState;
 
 UENUM(BlueprintType)
